@@ -1,0 +1,131 @@
+CREATE DATABASE IF NOT EXISTS company_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE company_db;
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  state VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'officer') NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS forms (
+  id BIGINT PRIMARY KEY,
+  form_id VARCHAR(64) NOT NULL UNIQUE,
+  name VARCHAR(500) NOT NULL,
+  sections JSON NOT NULL,
+  states JSON NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'draft',
+  survey_year VARCHAR(32) DEFAULT NULL,
+  description TEXT,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS custom_sections (
+  id VARCHAR(128) PRIMARY KEY,
+  payload JSON NOT NULL,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS responses (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  form_id VARCHAR(64) NOT NULL,
+  form_name VARCHAR(500) DEFAULT NULL,
+  state VARCHAR(255) NOT NULL,
+  survey_year VARCHAR(32) DEFAULT NULL,
+  data JSON NOT NULL,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  officer_id BIGINT DEFAULT NULL,
+  officer_name VARCHAR(255) DEFAULT NULL,
+  officer_email VARCHAR(255) DEFAULT NULL,
+  UNIQUE KEY uq_state_form (state, form_id)
+);
+
+CREATE TABLE IF NOT EXISTS draft_responses (
+  state VARCHAR(255) NOT NULL,
+  form_id VARCHAR(64) NOT NULL,
+  data JSON NOT NULL,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (state, form_id)
+);
+
+-- ───────────────────────────────────────────────────────────
+--  STATIC FORMS  (admin-managed: DA cadre nominations, MCA/MKI)
+-- ───────────────────────────────────────────────────────────
+
+-- Form 1: Nomination of DA Cadre Official
+CREATE TABLE IF NOT EXISTS da_nominations (
+  id BIGINT PRIMARY KEY,
+  state VARCHAR(255) NOT NULL,
+  employee_name VARCHAR(255) NOT NULL,
+  designation VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  mobile VARCHAR(32) NOT NULL,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Form 2: MCA / MKI combined record
+CREATE TABLE IF NOT EXISTS mca_mki_records (
+  id BIGINT PRIMARY KEY,
+  state VARCHAR(255) NOT NULL,
+  mca_due_date DATE DEFAULT NULL,
+  mca_allocation_date DATE DEFAULT NULL,
+  mca_comment TEXT,
+  mki_due_date DATE DEFAULT NULL,
+  mki_allocation_date DATE DEFAULT NULL,
+  mki_comment TEXT,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ───────────────────────────────────────────────────────────
+--  REFERENCE DATA  (single source of truth for dropdowns)
+-- ───────────────────────────────────────────────────────────
+
+-- All Indian states and union territories
+CREATE TABLE IF NOT EXISTS states (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  is_ut TINYINT(1) NOT NULL DEFAULT 0,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Designations (DA cadre and others)
+CREATE TABLE IF NOT EXISTS designations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_by BIGINT DEFAULT NULL,
+  created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by BIGINT DEFAULT NULL,
+  updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

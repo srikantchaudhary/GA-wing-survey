@@ -1,0 +1,1 @@
+function e(e){if(!e)return``;let t=typeof e==`string`?new Date(e):e;return!(t instanceof Date)||Number.isNaN(t.getTime())?String(e):`${String(t.getDate()).padStart(2,`0`)}-${String(t.getMonth()+1).padStart(2,`0`)}-${t.getFullYear()}`}function t(){return new Date().toISOString().slice(0,10)}export{t as n,e as t};

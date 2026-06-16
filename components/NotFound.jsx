@@ -1,0 +1,43 @@
+import { useNavigate } from "react-router-dom";
+
+export default function NotFound() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-[linear-gradient(160deg,#F7F5EF_0%,#EAF1FB_60%,#E1F5EE_100%)] font-['DM_Sans','Segoe_UI',sans-serif] flex flex-col items-center justify-center py-10 px-6">
+      <div className="text-center max-w-[480px]">
+        <div className="w-[120px] h-[120px] rounded-full mx-auto mb-8 bg-gradient-to-br from-[#185FA5] to-[#0F6E56] flex items-center justify-center text-white text-5xl font-extrabold font-serif shadow-[0_12px_40px_rgba(24,95,165,0.3)]">
+          404
+        </div>
+
+        <h1 className="text-[32px] font-black text-[#2C2C2A] font-serif m-0 mb-4 leading-tight">
+          Page Not Found
+        </h1>
+
+        <p className="text-[15px] text-[#5F5E5A] leading-[1.7] mb-8">
+          The page you're looking for doesn't exist or has been moved.
+          Please check the URL or navigate back to the home page.
+        </p>
+
+        <div className="flex gap-3 justify-center flex-wrap">
+          <button
+            onClick={() => navigate(-1)}
+            className="py-3 px-6 rounded-[10px] border-[1.5px] border-[#D3D1C7] bg-[#F1EFE8] text-[#444441] text-sm font-bold cursor-pointer transition-all duration-150"
+          >
+            ← Go Back
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            className="py-3 px-6 rounded-[10px] bg-gradient-to-br from-[#185FA5] to-[#0F6E56] text-white border-0 text-sm font-bold cursor-pointer shadow-[0_4px_16px_rgba(24,95,165,0.25)] transition-all duration-150"
+          >
+            🏠 Go to Home
+          </button>
+        </div>
+
+        <div className="mt-12 pt-6 border-t border-[#E8E6DF] text-xs text-[#B4B2A9]">
+          GA Wing IMS · Office of the Controller General of Accounts · Ministry of Finance
+        </div>
+      </div>
+    </div>
+  );
+}
