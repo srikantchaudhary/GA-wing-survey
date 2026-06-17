@@ -234,3 +234,17 @@ export async function saveMcaMkiRecord(record) {
 export async function deleteMcaMkiRecord(id) {
   return api(`/mca-mki/${id}`, { method: "DELETE" });
 }
+
+export async function updateNomination(id, data) {
+  return api(`/nominations/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMcaMkiRecord(id, data) {
+  return api(`/mca-mki/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}

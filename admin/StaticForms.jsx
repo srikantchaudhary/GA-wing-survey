@@ -1,160 +1,140 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDateDdMmYyyy } from "../dateUtils.js";
 import {
-  logoutUser,
-  getStates, getDesignations,
-  getNominations, saveNomination, deleteNomination,
-  getMcaMkiRecords, saveMcaMkiRecord, deleteMcaMkiRecord,
+  logoutUser, getStates,
+  getNominations, getMcaMkiRecords,
 } from "../store.js";
-import { ALL_INDIAN_STATES_AND_UTS, DESIGNATIONS } from "../constants.js";
+import { ALL_INDIAN_STATES_AND_UTS } from "../constants.js";
 import Breadcrumb from "../components/Breadcrumb.jsx";
 import AdminSidebar from "./AdminSidebar.jsx";
 
-const EMPTY = { state: "", name: "", designation: "", email: "", mobile: "" };
+const MONTH_OPTIONS = [
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
 
 const SELECT_ARROW =
   "appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%228%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20d%3D%22M1%201l5%205%205-5%22%20stroke%3D%22%23888780%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22/%3E%3C/svg%3E')] bg-[length:12px_8px] bg-[right_12px_center] bg-no-repeat pr-9";
+
+function SortIcon({ active, dir }) {
+  return (
+    <span className="ml-1 inline-flex flex-col gap-[1px]">
+      <svg width="7" height="4" viewBox="0 0 7 4" fill={active && dir === "asc" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.2"><path d="M0.5 3.5L3.5 0.5L6.5 3.5" /></svg>
+      <svg width="7" height="4" viewBox="0 0 7 4" fill={active && dir === "desc" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.2"><path d="M0.5 0.5L3.5 3.5L6.5 0.5" /></svg>
+    </span>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
 
 export default function StaticForms() {
   const navigate = useNavigate();
 
   const [states, setStates] = useState([]);
-  const [designations, setDesignations] = useState([]);
-  const [statesError, setStatesError] = useState(false);
-  const [desigError, setDesigError] = useState(false);
-
-  const [form, setForm] = useState(EMPTY);
-  const [errors, setErrors] = useState({});
-  const [records, setRecords] = useState([]);
-
-  // MCA / MKI combined form
-  const MCA_EMPTY = { state: "", mcaDue: "", mcaAlloc: "", mcaComment: "", mkiDue: "", mkiAlloc: "", mkiComment: "" };
-  const [mca, setMca] = useState(MCA_EMPTY);
-  const [mcaErrors, setMcaErrors] = useState({});
+  const [nominations, setNominations] = useState([]);
   const [mcaRecords, setMcaRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const setMcaField = (key, val) => {
-    setMca(f => ({ ...f, [key]: val }));
-    setMcaErrors(e => ({ ...e, [key]: undefined }));
-  };
+  const [reportType, setReportType] = useState("nomination");
+  const [filterState, setFilterState] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({ col: null, dir: "asc" });
 
-  const submitMca = async () => {
-    if (!mca.state) { setMcaErrors({ state: "Please select a state." }); return; }
-    try {
-      const saved = await saveMcaMkiRecord(mca);
-      setMcaRecords(r => [saved, ...r]);
-      setMca(MCA_EMPTY);
-      setMcaErrors({});
-    } catch (err) {
-      setMcaErrors(e => ({ ...e, _form: err.message || "Failed to submit record." }));
-    }
-  };
+  useEffect(() => { document.title = "GA Wing Survey Portal - Static Report"; }, []);
 
-  const cancelMca = () => { setMca(MCA_EMPTY); setMcaErrors({}); };
-  const removeMcaRecord = async (id) => {
-    const prev = mcaRecords;
-    setMcaRecords(r => r.filter(x => x.id !== id));
-    try {
-      await deleteMcaMkiRecord(id);
-    } catch {
-      setMcaRecords(prev);
-    }
-  };
-
-  useEffect(() => {
-    document.title = "GA Wing Survey Portal - Static Forms";
-  }, []);
-
-  // Load reference data (states + designations) from the API, with a
-  // local fallback so the form still works if the API is unreachable.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const s = await getStates();
-        if (!cancelled) { setStates(s); setStatesError(false); }
-      } catch {
-        if (!cancelled) { setStates(ALL_INDIAN_STATES_AND_UTS); setStatesError(true); }
-      }
-      try {
-        const d = await getDesignations();
-        if (!cancelled) { setDesignations(d); setDesigError(false); }
-      } catch {
-        if (!cancelled) { setDesignations(DESIGNATIONS); setDesigError(true); }
-      }
+      try { const s = await getStates(); if (!cancelled) setStates(s); }
+      catch { if (!cancelled) setStates(ALL_INDIAN_STATES_AND_UTS); }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // Load previously submitted records from the backend.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
         const [noms, mcas] = await Promise.all([getNominations(), getMcaMkiRecords()]);
         if (cancelled) return;
-        setRecords(Array.isArray(noms) ? noms : []);
+        setNominations(Array.isArray(noms) ? noms : []);
         setMcaRecords(Array.isArray(mcas) ? mcas : []);
       } catch (err) {
-        console.error("Failed to load static-form records", err);
+        console.error("Failed to load records", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  const handleLogout = () => {
-    logoutUser();
-    window.dispatchEvent(new StorageEvent('storage', { key: 'gawing_session', newValue: null }));
-    navigate("/login");
+  const handleLogout = async () => {
+    await logoutUser();
+    window.dispatchEvent(new StorageEvent("storage", { key: "gawing_session", newValue: null }));
+    navigate("/login", { replace: true });
   };
 
-  const setField = (key, val) => {
-    setForm(f => ({ ...f, [key]: val }));
-    setErrors(e => ({ ...e, [key]: undefined }));
-  };
+  const toggleSort = (col) =>
+    setSort(s => ({ col, dir: s.col === col && s.dir === "asc" ? "desc" : "asc" }));
 
-  const validate = () => {
-    const e = {};
-    if (!form.state) e.state = "Please select a state.";
-    if (!form.name.trim()) e.name = "Please enter the employee name.";
-    if (!form.designation) e.designation = "Please select a designation.";
-    if (!form.email.trim()) e.email = "Please enter an email.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Please enter a valid email.";
-    if (!form.mobile.trim()) e.mobile = "Please enter a mobile number.";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validate()) return;
-    try {
-      const saved = await saveNomination(form);
-      setRecords(r => [saved, ...r]);
-      setForm(EMPTY);
-      setErrors({});
-    } catch (err) {
-      setErrors(e => ({ ...e, _form: err.message || "Failed to submit nomination." }));
+  const applyFilters = (rows, type) => {
+    let result = rows.filter(r => {
+      if (filterState && r.state !== filterState) return false;
+      if (filterMonth) {
+        if (type === "mca") {
+          const hasMcaMonth = [r.mcaDue, r.mcaAlloc, r.mkiDue, r.mkiAlloc]
+            .some(d => d && d.slice(5, 7) === filterMonth);
+          if (!hasMcaMonth) return false;
+        } else {
+          if (r.createdAt?.slice(5, 7) !== filterMonth) return false;
+        }
+      }
+      if (search) {
+        const s = search.toLowerCase();
+        if (!Object.values(r).some(v => String(v ?? "").toLowerCase().includes(s))) return false;
+      }
+      return true;
+    });
+    if (sort.col) {
+      result = [...result].sort((a, b) => {
+        const av = String(a[sort.col] ?? "").toLowerCase();
+        const bv = String(b[sort.col] ?? "").toLowerCase();
+        return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
     }
+    return result;
   };
 
-  const handleCancel = () => {
-    setForm(EMPTY);
-    setErrors({});
-  };
+  const filteredNoms = useMemo(() => applyFilters(nominations, "nomination"), [nominations, filterState, filterMonth, search, sort]);
+  const filteredMcas = useMemo(() => applyFilters(mcaRecords, "mca"), [mcaRecords, filterState, filterMonth, search, sort]);
 
-  const removeRecord = async (id) => {
-    const prev = records;
-    setRecords(r => r.filter(x => x.id !== id));
-    try {
-      await deleteNomination(id);
-    } catch {
-      setRecords(prev);
-    }
-  };
+  const displayRows = reportType === "nomination" ? filteredNoms : filteredMcas;
+  const totalRows = reportType === "nomination" ? nominations.length : mcaRecords.length;
+  const hasFilters = filterState || filterMonth || search;
 
-  const labelCls = "mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-ga-muted";
-  const inputBase = "box-border w-full rounded-lg border-[1.5px] px-[13px] py-[9px] text-[13px] text-ga-ink outline-none transition-[border-color] duration-150";
-  const fieldErr = (k) => errors[k] ? "border-ga-error bg-[#FFF8F8]" : "border-ga-line bg-white";
+  const thCls = "px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-ga-muted cursor-pointer select-none hover:text-ga-ink whitespace-nowrap";
+  const tdCls = "px-3 py-3";
+  const selectCls = `${SELECT_ARROW} rounded-lg border border-ga-line bg-white py-2 pl-3 text-[13px] text-ga-ink outline-none focus:border-ga-blue transition-colors`;
 
   return (
     <div className="min-h-screen bg-ga-cream font-sans flex flex-col">
@@ -165,12 +145,8 @@ export default function StaticForms() {
             GA
           </div>
           <div>
-            <div className="text-[15px] font-bold text-[#2C2C2A] leading-tight font-serif">
-              GA Wing Survey Portal
-            </div>
-            <div className="text-[10px] text-[#888780]">
-              Office of the Controller General of Accounts · Ministry of Finance
-            </div>
+            <div className="text-[15px] font-bold text-[#2C2C2A] leading-tight font-serif">GA Wing Survey Portal</div>
+            <div className="text-[10px] text-[#888780]">Office of the Controller General of Accounts · Ministry of Finance</div>
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -179,283 +155,181 @@ export default function StaticForms() {
         </div>
       </header>
 
-      {/* Main content with sidebar */}
       <div className="flex-1 flex">
         <AdminSidebar activePage="static-forms" />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <div className="border-b border-ga-border bg-white px-6 py-3">
             <Breadcrumb />
           </div>
 
           <div className="flex-1 overflow-y-auto px-8 py-7">
-            <div className="mx-auto max-w-[860px]">
-            <h1 className="mb-5 text-2xl font-extrabold text-ga-ink font-serif">CAG — Static Forms</h1>
 
-            {/* Nomination card */}
-            <div className="overflow-hidden rounded-2xl border border-ga-border bg-white shadow-[0_2px_14px_rgba(0,0,0,0.05)]">
+            {/* Page header */}
+            <div className="mb-6">
+              <h1 className="text-2xl font-extrabold text-ga-ink font-serif">Static Report</h1>
+              <p className="mt-1 text-[13px] text-ga-muted">View DA cadre nominations and MCA/MKI records</p>
+            </div>
 
-              {/* Card header */}
-              <div className="flex items-center justify-between border-b border-ga-border bg-ga-cream px-6 py-4">
-                <div className="flex items-center gap-2.5">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="m16 11 2 2 4-4" />
-                  </svg>
-                  <span className="text-base font-bold text-ga-ink">Nomination of DA Cadre Official</span>
+            {/* Filter bar */}
+            <div className="rounded-2xl border border-ga-border bg-white shadow-[0_2px_14px_rgba(0,0,0,0.05)] px-6 py-5 mb-6">
+              <div className="flex flex-wrap items-end gap-4">
+
+                {/* Report type toggle */}
+                <div>
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">Report Type</p>
+                  <div className="flex rounded-lg border border-ga-line overflow-hidden">
+                    <button
+                      onClick={() => { setReportType("nomination"); setSort({ col: null, dir: "asc" }); }}
+                      className={`px-4 py-2 text-[13px] font-semibold transition-colors cursor-pointer border-none ${reportType === "nomination" ? "bg-ga-blue text-white" : "bg-white text-ga-body hover:bg-ga-cream"}`}
+                    >
+                      Nomination
+                    </button>
+                    <button
+                      onClick={() => { setReportType("mca"); setSort({ col: null, dir: "asc" }); }}
+                      className={`px-4 py-2 text-[13px] font-semibold transition-colors cursor-pointer border-none border-l border-ga-line ${reportType === "mca" ? "bg-ga-blue text-white" : "bg-white text-ga-body hover:bg-ga-cream"}`}
+                    >
+                      MCA / MKI
+                    </button>
+                  </div>
                 </div>
-                <span className="rounded-md border border-[#B5D4F4] bg-[#E6F1FB] px-2.5 py-1 text-xs font-semibold text-ga-blue">Form 1</span>
-              </div>
 
-              {/* Card body */}
-              <div className="px-6 py-6">
-                {statesError && (
-                  <div className="mb-3 rounded-lg border border-[#F0C4C4] bg-[#FDECEC] px-4 py-3 text-[13px] font-medium text-ga-error">
-                    Could not load states. Please refresh.
-                  </div>
-                )}
-                {desigError && (
-                  <div className="mb-3 rounded-lg border border-[#F0C4C4] bg-[#FDECEC] px-4 py-3 text-[13px] font-medium text-ga-error">
-                    Could not load designations. Please refresh.
-                  </div>
-                )}
-
-                {/* Name of state */}
-                <div className="mb-4">
-                  <label className={labelCls}>Name of State <span className="text-ga-error">*</span></label>
-                  <select
-                    value={form.state}
-                    onChange={e => setField("state", e.target.value)}
-                    className={`${inputBase} ${SELECT_ARROW} ${fieldErr("state")} ${form.state ? "text-ga-ink" : "text-ga-muted"}`}
-                  >
-                    <option value="">Select state…</option>
-                    {states.map(s => <option key={s} value={s} className="text-ga-ink">{s}</option>)}
+                {/* State filter */}
+                <div>
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">State</p>
+                  <select value={filterState} onChange={e => setFilterState(e.target.value)} className={selectCls}>
+                    <option value="">All States</option>
+                    {states.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {errors.state && <div className="mt-1.5 text-[11px] font-medium text-ga-error">ⓘ {errors.state}</div>}
                 </div>
 
-                {/* Employee name + Designation */}
-                <div className="mb-4 grid grid-cols-2 gap-5">
-                  <div>
-                    <label className={labelCls}>Employee Name <span className="text-ga-error">*</span></label>
+                {/* Month filter */}
+                <div>
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">Month</p>
+                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className={selectCls}>
+                    <option value="">All Months</option>
+                    {MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Search */}
+                <div className="flex-1 min-w-[200px]">
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">Search</p>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ga-faint"><SearchIcon /></span>
                     <input
                       type="text"
-                      value={form.name}
-                      onChange={e => setField("name", e.target.value)}
-                      placeholder="Enter full name"
-                      className={`${inputBase} ${fieldErr("name")}`}
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="Search across all fields…"
+                      className="w-full rounded-lg border border-ga-line bg-white py-2 pl-9 pr-3 text-[13px] text-ga-ink placeholder:text-ga-faint outline-none focus:border-ga-blue"
                     />
-                    {errors.name && <div className="mt-1.5 text-[11px] font-medium text-ga-error">ⓘ {errors.name}</div>}
-                  </div>
-                  <div>
-                    <label className={labelCls}>Designation <span className="text-ga-error">*</span></label>
-                    <select
-                      value={form.designation}
-                      onChange={e => setField("designation", e.target.value)}
-                      className={`${inputBase} ${SELECT_ARROW} ${fieldErr("designation")} ${form.designation ? "text-ga-ink" : "text-ga-muted"}`}
-                    >
-                      <option value="">Select…</option>
-                      {designations.map(d => <option key={d} value={d} className="text-ga-ink">{d}</option>)}
-                    </select>
-                    {errors.designation && <div className="mt-1.5 text-[11px] font-medium text-ga-error">ⓘ {errors.designation}</div>}
                   </div>
                 </div>
 
-                {/* Email + Mobile */}
-                <div className="mb-5 grid grid-cols-2 gap-5">
-                  <div>
-                    <label className={labelCls}>Email <span className="text-ga-error">*</span></label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={e => setField("email", e.target.value)}
-                      placeholder="official@gov.in"
-                      className={`${inputBase} ${fieldErr("email")}`}
-                    />
-                    {errors.email && <div className="mt-1.5 text-[11px] font-medium text-ga-error">ⓘ {errors.email}</div>}
-                  </div>
-                  <div>
-                    <label className={labelCls}>Mobile Number <span className="text-ga-error">*</span></label>
-                    <input
-                      type="tel"
-                      value={form.mobile}
-                      onChange={e => setField("mobile", e.target.value)}
-                      placeholder="+91 XXXXX XXXXX"
-                      className={`${inputBase} ${fieldErr("mobile")}`}
-                    />
-                    {errors.mobile && <div className="mt-1.5 text-[11px] font-medium text-ga-error">ⓘ {errors.mobile}</div>}
-                  </div>
-                </div>
-
-                {errors._form && (
-                  <div className="mb-3 rounded-lg border border-[#F0C4C4] bg-[#FDECEC] px-4 py-3 text-[13px] font-medium text-ga-error">{errors._form}</div>
-                )}
-
-                {/* Records */}
-                {records.length === 0 ? (
-                  <div className="rounded-xl border border-ga-border bg-ga-cream/60 py-7 text-center text-[13px] text-ga-muted">
-                    No records yet. Submit the form above to add one.
-                  </div>
-                ) : (
-                  <div className="overflow-hidden rounded-xl border border-ga-border">
-                    <table className="w-full border-collapse text-[13px]">
-                      <thead>
-                        <tr className="bg-ga-cream text-left text-[11px] font-bold uppercase tracking-wider text-ga-muted">
-                          <th className="px-3 py-2.5">#</th>
-                          <th className="px-3 py-2.5">State</th>
-                          <th className="px-3 py-2.5">Employee</th>
-                          <th className="px-3 py-2.5">Designation</th>
-                          <th className="px-3 py-2.5">Email</th>
-                          <th className="px-3 py-2.5">Mobile</th>
-                          <th className="px-3 py-2.5"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {records.map((r, i) => (
-                          <tr key={r.id} className="border-t border-ga-border text-ga-ink">
-                            <td className="px-3 py-2.5 text-ga-muted">{i + 1}</td>
-                            <td className="px-3 py-2.5">{r.state}</td>
-                            <td className="px-3 py-2.5 font-semibold">{r.name}</td>
-                            <td className="px-3 py-2.5">{r.designation}</td>
-                            <td className="px-3 py-2.5">{r.email}</td>
-                            <td className="px-3 py-2.5">{r.mobile}</td>
-                            <td className="px-3 py-2.5 text-right">
-                              <button onClick={() => removeRecord(r.id)} className="cursor-pointer rounded-md border border-ga-line bg-ga-surface px-2 py-1 text-[11px] font-semibold text-ga-error">Remove</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Card footer */}
-              <div className="flex items-center justify-end gap-3 border-t border-ga-border bg-ga-cream px-6 py-4">
-                <button onClick={handleCancel} className="cursor-pointer rounded-lg border border-ga-line bg-white px-4 py-2.5 text-[13px] font-semibold text-ga-body">✕ Cancel</button>
-                <button onClick={handleSubmit} className="cursor-pointer rounded-lg border border-[#B5D4F4] bg-[#E6F1FB] px-4 py-2.5 text-[13px] font-bold text-ga-blue">✓ Submit Nomination</button>
-              </div>
-            </div>
-
-            {/* MCA / MKI combined card */}
-            <div className="mt-6 overflow-hidden rounded-2xl border border-ga-border bg-white shadow-[0_2px_14px_rgba(0,0,0,0.05)]">
-
-              {/* Card header */}
-              <div className="flex items-center justify-between border-b border-ga-border bg-ga-cream px-6 py-4">
-                <div className="flex items-center gap-2.5">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <path d="M16 2v4M8 2v4M3 10h18" />
-                  </svg>
-                  <span className="text-base font-bold text-ga-ink">MCA / MKI</span>
-                </div>
-                <span className="rounded-md border border-[#B5D4F4] bg-[#E6F1FB] px-2.5 py-1 text-xs font-semibold text-ga-blue">Combined Form</span>
-              </div>
-
-              {/* Card body */}
-              <div className="px-6 py-6">
-                {/* State */}
-                <div className="mb-6">
-                  <label className={labelCls}>State <span className="text-ga-error">*</span></label>
-                  <select
-                    value={mca.state}
-                    onChange={e => setMcaField("state", e.target.value)}
-                    className={`${inputBase} ${SELECT_ARROW} ${mcaErrors.state ? "border-ga-error bg-[#FFF8F8]" : "border-ga-line bg-white"} ${mca.state ? "text-ga-ink" : "text-ga-muted"}`}
+                {/* Clear filters */}
+                {hasFilters && (
+                  <button
+                    onClick={() => { setFilterState(""); setFilterMonth(""); setSearch(""); }}
+                    className="cursor-pointer rounded-lg border border-ga-line bg-ga-cream px-4 py-2 text-[13px] font-semibold text-ga-body hover:bg-ga-border transition-colors self-end"
                   >
-                    <option value="">Select state</option>
-                    {states.map(s => <option key={s} value={s} className="text-ga-ink">{s}</option>)}
-                  </select>
-                  {mcaErrors.state && <div className="mt-1.5 text-[11px] font-medium text-ga-error">ⓘ {mcaErrors.state}</div>}
-                </div>
-
-                {/* MCA Fields */}
-                <div className="mb-2 border-t border-ga-border pt-5">
-                  <div className="mb-4 text-sm font-bold text-ga-ink">MCA Fields</div>
-                  <div className="mb-4 grid grid-cols-2 gap-5">
-                    <div>
-                      <label className={labelCls}>Due Date</label>
-                      <input type="date" value={mca.mcaDue} onChange={e => setMcaField("mcaDue", e.target.value)} className={`${inputBase} border-ga-line bg-white ${mca.mcaDue ? "text-ga-ink" : "text-ga-muted"}`} />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Allocation Date</label>
-                      <input type="date" value={mca.mcaAlloc} onChange={e => setMcaField("mcaAlloc", e.target.value)} className={`${inputBase} border-ga-line bg-white ${mca.mcaAlloc ? "text-ga-ink" : "text-ga-muted"}`} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Comment</label>
-                    <textarea value={mca.mcaComment} onChange={e => setMcaField("mcaComment", e.target.value)} placeholder="MCA remarks…" rows={3} maxLength={1000} className={`${inputBase} resize-y border-ga-line bg-white`} />
-                  </div>
-                </div>
-
-                {/* MKI Fields */}
-                <div className="mb-6 border-t border-ga-border pt-5">
-                  <div className="mb-4 text-sm font-bold text-ga-ink">MKI Fields</div>
-                  <div className="mb-4 grid grid-cols-2 gap-5">
-                    <div>
-                      <label className={labelCls}>Due Date</label>
-                      <input type="date" value={mca.mkiDue} onChange={e => setMcaField("mkiDue", e.target.value)} className={`${inputBase} border-ga-line bg-white ${mca.mkiDue ? "text-ga-ink" : "text-ga-muted"}`} />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Allocation Date</label>
-                      <input type="date" value={mca.mkiAlloc} onChange={e => setMcaField("mkiAlloc", e.target.value)} className={`${inputBase} border-ga-line bg-white ${mca.mkiAlloc ? "text-ga-ink" : "text-ga-muted"}`} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Comment</label>
-                    <textarea value={mca.mkiComment} onChange={e => setMcaField("mkiComment", e.target.value)} placeholder="MKI remarks…" rows={3} maxLength={1000} className={`${inputBase} resize-y border-ga-line bg-white`} />
-                  </div>
-                </div>
-
-                {mcaErrors._form && (
-                  <div className="mb-3 rounded-lg border border-[#F0C4C4] bg-[#FDECEC] px-4 py-3 text-[13px] font-medium text-ga-error">{mcaErrors._form}</div>
+                    Clear Filters
+                  </button>
                 )}
+              </div>
+            </div>
 
-                {/* Records */}
-                {mcaRecords.length === 0 ? (
-                  <div className="rounded-xl border border-ga-border bg-ga-cream/60 py-7 text-center text-[13px] text-ga-muted">
-                    No records yet. Submit the form above to add one.
-                  </div>
-                ) : (
-                  <div className="overflow-hidden rounded-xl border border-ga-border">
-                    <table className="w-full border-collapse text-[13px]">
-                      <thead>
-                        <tr className="bg-ga-cream text-left text-[11px] font-bold uppercase tracking-wider text-ga-muted">
-                          <th className="px-3 py-2.5">#</th>
-                          <th className="px-3 py-2.5">State</th>
-                          <th className="px-3 py-2.5">MCA Due</th>
-                          <th className="px-3 py-2.5">MCA Alloc.</th>
-                          <th className="px-3 py-2.5">MKI Due</th>
-                          <th className="px-3 py-2.5">MKI Alloc.</th>
-                          <th className="px-3 py-2.5"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mcaRecords.map((r, i) => (
-                          <tr key={r.id} className="border-t border-ga-border text-ga-ink">
-                            <td className="px-3 py-2.5 text-ga-muted">{i + 1}</td>
-                            <td className="px-3 py-2.5 font-semibold">{r.state}</td>
-                            <td className="px-3 py-2.5">{r.mcaDue || "—"}</td>
-                            <td className="px-3 py-2.5">{r.mcaAlloc || "—"}</td>
-                            <td className="px-3 py-2.5">{r.mkiDue || "—"}</td>
-                            <td className="px-3 py-2.5">{r.mkiAlloc || "—"}</td>
-                            <td className="px-3 py-2.5 text-right">
-                              <button onClick={() => removeMcaRecord(r.id)} className="cursor-pointer rounded-md border border-ga-line bg-ga-surface px-2 py-1 text-[11px] font-semibold text-ga-error">Remove</button>
-                            </td>
-                          </tr>
+            {/* Table card */}
+            <div className="overflow-hidden rounded-2xl border border-ga-border bg-white shadow-[0_2px_14px_rgba(0,0,0,0.05)]">
+
+              <div className="flex items-center justify-between border-b border-ga-border bg-ga-cream px-6 py-4">
+                <h2 className="font-bold text-ga-ink">
+                  {reportType === "nomination" ? "Nomination of DA Cadre Official" : "MCA / MKI Records"}
+                </h2>
+                <span className="text-[12px] text-ga-muted">
+                  {loading ? "Loading…" : `${displayRows.length} of ${totalRows} record${totalRows !== 1 ? "s" : ""}`}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                {reportType === "nomination" ? (
+                  <table className="w-full border-collapse text-[13px]">
+                    <thead>
+                      <tr className="border-b border-ga-border bg-ga-cream/50">
+                        <th className="w-12 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-ga-muted">S.NO</th>
+                        {[["state", "STATE"], ["name", "EMPLOYEE NAME"], ["designation", "DESIGNATION"], ["email", "EMAIL"], ["mobile", "MOBILE"]].map(([col, label]) => (
+                          <th key={col} className={thCls} onClick={() => toggleSort(col)}>
+                            <span className="flex items-center gap-1">{label} </span>
+                          </th>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <tr><td colSpan={6} className="px-6 py-12 text-center text-[13px] text-ga-muted">Loading records…</td></tr>
+                      ) : filteredNoms.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center text-[13px] text-ga-muted">
+                            {nominations.length === 0 ? "No nomination records found." : "No records match the selected filters."}
+                          </td>
+                        </tr>
+                      ) : filteredNoms.map((r, i) => (
+                        <tr key={r.id} className="border-t border-ga-border hover:bg-ga-cream/30 transition-colors">
+                          <td className={`${tdCls} text-ga-muted`}>{i + 1}</td>
+                          <td className={tdCls}>{r.state}</td>
+                          <td className={`${tdCls} font-semibold`}>{r.name}</td>
+                          <td className={tdCls}>{r.designation}</td>
+                          <td className={tdCls}>{r.email}</td>
+                          <td className={tdCls}>{r.mobile}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table className="w-full border-collapse text-[13px]">
+                    <thead>
+                      <tr className="border-b border-ga-border bg-ga-cream/50">
+                        <th className="w-12 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-ga-muted">S.NO</th>
+                        {[["state", "STATE"], ["mcaDue", "MCA DUE"], ["mcaAlloc", "MCA ALLOC."], ["mcaComment", "MCA COMMENT"], ["mkiDue", "MKI DUE"], ["mkiAlloc", "MKI ALLOC."], ["mkiComment", "MKI COMMENT"]].map(([col, label]) => (
+                          <th key={col} className={thCls} onClick={() => toggleSort(col)}>
+                            <span className="flex items-center gap-1">{label} </span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <tr><td colSpan={8} className="px-6 py-12 text-center text-[13px] text-ga-muted">Loading records…</td></tr>
+                      ) : filteredMcas.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-12 text-center text-[13px] text-ga-muted">
+                            {mcaRecords.length === 0 ? "No MCA/MKI records found." : "No records match the selected filters."}
+                          </td>
+                        </tr>
+                      ) : filteredMcas.map((r, i) => (
+                        <tr key={r.id} className="border-t border-ga-border hover:bg-ga-cream/30 transition-colors">
+                          <td className={`${tdCls} text-ga-muted`}>{i + 1}</td>
+                          <td className={`${tdCls} font-semibold`}>{r.state}</td>
+                          <td className={tdCls}>{r.mcaDue ? formatDateDdMmYyyy(r.mcaDue) : "—"}</td>
+                          <td className={tdCls}>{r.mcaAlloc ? formatDateDdMmYyyy(r.mcaAlloc) : "—"}</td>
+                          <td className={`${tdCls} max-w-[200px] truncate`} title={r.mcaComment || ""}>{r.mcaComment || "—"}</td>
+                          <td className={tdCls}>{r.mkiDue ? formatDateDdMmYyyy(r.mkiDue) : "—"}</td>
+                          <td className={tdCls}>{r.mkiAlloc ? formatDateDdMmYyyy(r.mkiAlloc) : "—"}</td>
+                          <td className={`${tdCls} max-w-[200px] truncate`} title={r.mkiComment || ""}>{r.mkiComment || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
 
-              {/* Card footer */}
-              <div className="flex items-center justify-end gap-3 border-t border-ga-border bg-ga-cream px-6 py-4">
-                <button onClick={cancelMca} className="cursor-pointer rounded-lg border border-ga-line bg-white px-4 py-2.5 text-[13px] font-semibold text-ga-body">✕ Cancel</button>
-                <button onClick={submitMca} className="cursor-pointer rounded-lg border border-[#B5D4F4] bg-[#E6F1FB] px-4 py-2.5 text-[13px] font-bold text-ga-blue">✓ Submit</button>
-              </div>
+              {!loading && displayRows.length > 0 && (
+                <div className="border-t border-ga-border bg-ga-cream/40 px-6 py-3 text-[12px] text-ga-muted">
+                  Showing {displayRows.length} of {totalRows} record{totalRows !== 1 ? "s" : ""}
+                  {hasFilters && <span className="ml-1 text-ga-blue font-medium">(filtered)</span>}
+                </div>
+              )}
             </div>
-            </div>
+
           </div>
         </div>
       </div>

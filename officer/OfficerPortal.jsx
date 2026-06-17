@@ -3,6 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import FormsList from "./FormsList";
 import Breadcrumb from "../components/Breadcrumb.jsx";
+import OfficerSidebar from "./OfficerSidebar.jsx";
+import PendingForms from "./PendingForms.jsx";
+import OfficerStaticForms from "./OfficerStaticForms.jsx";
+import StaticReportView from "./StaticReportView.jsx";
 
 import { getForms, getCustomSections, getCurrentUser, logoutUser } from "../store.js";
 
@@ -11,6 +15,7 @@ export default function OfficerPortal({ onSwitchToAdmin, onHome }) {
   const { state: stateParam } = useParams();
   const navigate = useNavigate();
   const [state, setState] = useState(null);
+  const [activePage, setActivePage] = useState("pending-forms");
 
   // Authentication and role check
   useEffect(() => {
@@ -77,11 +82,11 @@ export default function OfficerPortal({ onSwitchToAdmin, onHome }) {
     }
   }, [state]);
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     // Dispatch storage event to notify other tabs
     window.dispatchEvent(new StorageEvent('storage', { key: 'gawing_session', newValue: null }));
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   // Don't render if user doesn't have a state (needs re-login)
@@ -125,13 +130,24 @@ export default function OfficerPortal({ onSwitchToAdmin, onHome }) {
         <Breadcrumb />
       </div>
 
-      <div className="flex-1">
-        <FormsList
-          state={state}
-          forms={forms}
-          customSections={customSections}
-          onLogout={handleLogout}
-        />
+      <div className="flex flex-1 overflow-hidden">
+        <OfficerSidebar activePage={activePage} onPageChange={setActivePage} />
+        <div className="flex-1 overflow-y-auto bg-[#FAFAF8]">
+          {activePage === "pending-forms" && (
+            <PendingForms
+              state={state}
+              forms={forms}
+              customSections={customSections}
+              onLogout={handleLogout}
+            />
+          )}
+          {activePage === "static-forms" && (
+            <OfficerStaticForms state={state} onLogout={handleLogout} />
+          )}
+          {activePage === "static-report" && (
+            <StaticReportView state={state} onLogout={handleLogout} />
+          )}
+        </div>
       </div>
     </div>
   );

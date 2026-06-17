@@ -53,8 +53,8 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
 
     const row = formToRow(form);
     await pool.query(
-      `INSERT INTO forms (id, form_id, name, sections, states, status, survey_year, description, created_by, created_date, updated_by, updated_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO forms (id, form_id, name, sections, states, status, survey_year, description, created_by, created_date, updated_by, updated_date, saved_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          form_id = VALUES(form_id),
          name = VALUES(name),
@@ -64,7 +64,8 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
          survey_year = VALUES(survey_year),
          description = VALUES(description),
          updated_by = VALUES(updated_by),
-         updated_date = VALUES(updated_date)`,
+         updated_date = VALUES(updated_date),
+         saved_at = VALUES(saved_at)`,
       [
         row.id,
         row.form_id,
@@ -78,6 +79,7 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
         row.created_date,
         req.user.id || null,
         row.updated_date,
+        row.saved_at,
       ]
     );
 

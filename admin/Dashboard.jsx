@@ -58,10 +58,10 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     window.dispatchEvent(new StorageEvent('storage', { key: 'gawing_session', newValue: null }));
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const getFormById = (formId) => {

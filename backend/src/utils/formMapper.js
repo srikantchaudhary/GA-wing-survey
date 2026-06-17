@@ -9,11 +9,12 @@ export function rowToForm(row) {
     surveyYear: row.survey_year,
     description: row.description || "",
     createdAt: new Date(row.created_date).toISOString(),
-    savedAt: new Date(row.updated_date).toISOString(),
+    savedAt: new Date(row.saved_at || row.updated_date).toISOString(),
   };
 }
 
 export function formToRow(form) {
+  const now = new Date();
   return {
     id: form.id,
     form_id: form.formId,
@@ -23,7 +24,8 @@ export function formToRow(form) {
     status: form.status || "draft",
     survey_year: form.surveyYear || null,
     description: form.description || "",
-    created_date: form.createdAt ? new Date(form.createdAt) : new Date(),
-    updated_date: new Date(),
+    created_date: form.createdAt ? new Date(form.createdAt) : now,
+    updated_date: now,
+    saved_at: form.savedAt ? new Date(form.savedAt) : now,
   };
 }

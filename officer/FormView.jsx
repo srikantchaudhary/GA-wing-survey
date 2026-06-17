@@ -21,7 +21,8 @@ export default function FormView({ form, state, customSections, onBack }) {
 
   const [formData, setFormData]     = useState({ sub_date: getTodayIsoDate() });
   const [errors, setErrors]         = useState({});
-  const [submitted, setSubmitted]   = useState(false);
+  const [hasExistingSubmission, setHasExistingSubmission] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,7 @@ export default function FormView({ form, state, customSections, onBack }) {
             ...existing.data,
             sub_date: existing.data?.sub_date || existing.submittedAt?.slice(0, 10) || todayIso,
           });
-          setSubmitted(true);
+          setHasExistingSubmission(true);
         } else if (savedDraft) {
           // Submission date is always the current system date until submitted.
           setFormData({ ...savedDraft.data, sub_date: todayIso });
@@ -90,9 +91,10 @@ export default function FormView({ form, state, customSections, onBack }) {
   const filledRequired  = requiredFields.filter(f => { const v = formData[f.id]; return v !== undefined && v !== "" && (Array.isArray(v) ? v.length > 0 : true); });
   const progressPct     = allFields.length > 0 ? Math.round((filledCount / allFields.length) * 100) : 0;
   const requiredPct     = requiredFields.length > 0 ? Math.round((filledRequired.length / requiredFields.length) * 100) : 100;
+  const isSubmitted     = hasExistingSubmission || submitted;
+  const isExistingSubmission = hasExistingSubmission && !submitted;
 
   const setField = (id, val) => {
-    if (submitted) return;
     const newData = { ...formData, [id]: val };
     setFormData(newData);
     setErrors(e => ({ ...e, [id]: undefined }));
@@ -129,7 +131,7 @@ export default function FormView({ form, state, customSections, onBack }) {
         data: { ...formData, sub_date: todayIso },
       });
       setFormData(d => ({ ...d, sub_date: todayIso }));
-      setSubmitted(true);
+      setHasExistingSubmission(true);
       setShowSuccess(true);
     } catch (err) {
       console.error(err);
@@ -171,8 +173,8 @@ export default function FormView({ form, state, customSections, onBack }) {
             </div>
             <ProgressBar pct={requiredPct} barClass={requiredPct === 100 ? "bg-ga-green" : "bg-ga-error"} />
           </div>
-          {draftSavedAt && !submitted && <div className="mt-2 text-[11px] font-semibold text-ga-purple">💾 Draft saved at {formatDraft(draftSavedAt)}</div>}
-          {submitted && <div className="mt-2 text-[11px] font-semibold text-ga-green">✓ Submitted</div>}
+          {draftSavedAt && !isSubmitted && <div className="mt-2 text-[11px] font-semibold text-ga-purple">💾 Draft saved at {formatDraft(draftSavedAt)}</div>}
+          {isSubmitted && <div className="mt-2 text-[11px] font-semibold text-ga-green">✓ Submitted</div>}
         </div>
 
         <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-ga-faint">Jump To</div>
@@ -203,9 +205,9 @@ export default function FormView({ form, state, customSections, onBack }) {
           {safeForm.description && (
             <div className="rounded-[10px] border border-ga-border bg-white px-4 py-2.5 text-[13px] leading-relaxed text-ga-body">{safeForm.description}</div>
           )}
-          {submitted && (
+          {isSubmitted && (
             <div className="mt-2.5 rounded-[10px] border border-[#9FE1CB] bg-[#E1F5EE] px-4 py-2.5 text-[13px] font-semibold text-ga-green">
-              ✓ Already submitted — Read-only mode
+              ✓ Submitted — you can still update the responses
             </div>
           )}
         </div>
@@ -222,7 +224,7 @@ export default function FormView({ form, state, customSections, onBack }) {
                 )}
               </div>
               <div className="px-[22px] py-5">
-                {fields.map(f => <FormField key={f.id} field={resolveField(f)} value={formData[f.id]} onChange={val => setField(f.id, val)} error={errors[f.id]} disabled={submitted} />)}
+                {fields.map(f => <FormField key={f.id} field={resolveField(f)} value={formData[f.id]} onChange={val => setField(f.id, val)} error={errors[f.id]} disabled={false} />)}
               </div>
             </div>
           );
@@ -240,14 +242,14 @@ export default function FormView({ form, state, customSections, onBack }) {
               const rf = resolveField(f);
               return (
                 <div key={f.id} className={rf.type === "textarea" ? "col-span-2" : ""}>
-                  <FormField field={rf} value={formData[f.id]} onChange={val => setField(f.id, val)} error={errors[f.id]} disabled={submitted} />
+                  <FormField field={rf} value={formData[f.id]} onChange={val => setField(f.id, val)} error={errors[f.id]} disabled={false} />
                 </div>
               );
             })}
           </div>
         </div>
 
-        {!submitted ? (
+        {!isSubmitted ? (
           <div className="mb-10 flex gap-3">
             <button onClick={async () => {
               try {
@@ -258,6 +260,10 @@ export default function FormView({ form, state, customSections, onBack }) {
               }
             }} className="cursor-pointer rounded-[10px] border-[1.5px] border-[#AFA9EC] bg-[#EEEDFE] px-[22px] py-[11px] text-[13px] font-bold text-ga-purple">💾 Save Draft</button>
             <button onClick={handleSubmit} className="flex-1 cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(24,95,165,0.25)]">Submit Form →</button>
+          </div>
+        ) : isExistingSubmission ? (
+          <div className="mb-10 flex gap-3">
+            <button onClick={handleSubmit} className="flex-1 cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(24,95,165,0.25)]">Update Form</button>
           </div>
         ) : (
           <div className="mb-10">

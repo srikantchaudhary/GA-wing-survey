@@ -150,7 +150,7 @@ export default function AdminPortal({ onHome }) {
         name: `${f.name} (Copy)`,
         status: "draft",
         states: [],
-        formId: `GAW-CLONE-${newId.toString().slice(-4)}`,
+        formId: `GAW-CLONE-${newId}`,
         createdAt: new Date().toISOString(),
       });
       setForms(newForms);
@@ -173,7 +173,7 @@ export default function AdminPortal({ onHome }) {
         status: "draft",
         surveyYear: `${new Date().getFullYear()}-${(new Date().getFullYear() + 1).toString().slice(2)}`,
         description: "",
-        formId: `GAW-NEW-${newId.toString().slice(-4)}`,
+        formId: `GAW-NEW-${newId}`,
         createdAt: new Date().toISOString(),
         savedAt: new Date().toISOString(),
       });
@@ -223,10 +223,10 @@ export default function AdminPortal({ onHome }) {
     setActiveId(id);
   };
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     window.dispatchEvent(new StorageEvent('storage', { key: 'gawing_session', newValue: null }));
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const activeForm = forms.find(f => f.id === activeId);

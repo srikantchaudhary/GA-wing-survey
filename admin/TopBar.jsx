@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 export default function TopBar({ onNewForm, onHome }) {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     // Dispatch storage event to notify other tabs
     window.dispatchEvent(new StorageEvent('storage', { key: 'gawing_session', newValue: null }));
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
   return (
     <header className="sticky top-0 z-[100] flex h-[60px] items-center justify-between border-b border-ga-border bg-white px-6">

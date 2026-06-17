@@ -16,7 +16,7 @@ export default function AdminSidebar({ activePage }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: "📊", path: "/admin/dashboard" },
     { id: "admin", label: "Form Management", icon: "🛠", path: "/admin" },
-    { id: "static-forms", label: "Static Forms", icon: "📋", path: "/admin/static-forms" },
+    { id: "static-forms", label: "DA cadre & MCA/MKI Report", icon: "📋", path: "/admin/static-forms" },
   ];
 
   const handleItemClick = (path) => {
