@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutUser, getForms, getResponses, getCustomSections } from "../store.js";
 import Breadcrumb from "../components/Breadcrumb.jsx";
@@ -22,7 +22,7 @@ export default function Dashboard() {
   const [selectedFormId, setSelectedFormId] = useState(null);
 
   useEffect(() => {
-    document.title = "GA Wing Survey Portal - Admin Dashboard";
+    document.title = "GAMIS - Admin Dashboard";
     fetchData();
   }, []);
 
@@ -133,7 +133,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="text-[15px] font-bold text-[#2C2C2A] leading-tight font-serif">
-              GA Wing Survey Portal
+              GAMIS
             </div>
             <div className="text-[10px] text-[#888780]">
               Office of the Controller General of Accounts · Ministry of Finance

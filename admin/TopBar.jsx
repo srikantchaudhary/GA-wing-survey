@@ -1,4 +1,4 @@
-import Breadcrumb from "../components/Breadcrumb.jsx";
+﻿import Breadcrumb from "../components/Breadcrumb.jsx";
 import { logoutUser } from "../store.js";
 import { useNavigate } from "react-router-dom";
 
@@ -16,7 +16,7 @@ export default function TopBar({ onNewForm, onHome }) {
       <div className="flex items-center gap-3">
         <div onClick={onHome} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-[9px] bg-gradient-to-br from-ga-blue to-ga-green font-serif text-[13px] font-extrabold text-white">GA</div>
         <div>
-          <div className="font-serif text-[15px] font-bold leading-tight text-ga-ink">GA Wing Survey Portal</div>
+          <div className="font-serif text-[15px] font-bold leading-tight text-ga-ink">GAMIS</div>
           <div className="text-[10px] text-ga-muted">Admin · Ministry of Finance · IT Systems Access</div>
         </div>
       </div>

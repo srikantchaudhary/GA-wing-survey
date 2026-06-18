@@ -79,7 +79,7 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
         row.created_date,
         req.user.id || null,
         row.updated_date,
-        row.saved_at,
+        row.updated_date,
       ]
     );
 

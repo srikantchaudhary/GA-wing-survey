@@ -171,6 +171,22 @@ export async function getResponseByStateAndForm(state, formId) {
   return api(`/responses/lookup?${params}`);
 }
 
+export async function getAllResponsesByStateAndForm(state, formId) {
+  const params = new URLSearchParams({ state, formId });
+  return api(`/responses/lookup-all?${params}`);
+}
+
+export async function updateResponse(id, data) {
+  return api(`/responses/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ data }),
+  });
+}
+
+export async function duplicateResponseRecord(id) {
+  return api(`/responses/${id}/duplicate`, { method: "POST" });
+}
+
 // ══════════════════════════════════════════════════════════
 //  DRAFT RESPONSES API
 // ══════════════════════════════════════════════════════════
@@ -247,4 +263,52 @@ export async function updateMcaMkiRecord(id, data) {
     method: "PUT",
     body: JSON.stringify(data),
   });
+}
+
+// ══════════════════════════════════════════════════════════
+//  GRIEVANCES API
+// ══════════════════════════════════════════════════════════
+
+async function apiFormData(path, method, formData) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    body: formData,
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || "Request failed");
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+export async function getGrievances() {
+  return api("/grievances");
+}
+
+export async function saveGrievance(payload) {
+  const fd = new FormData();
+  fd.append("states", JSON.stringify(payload.states));
+  fd.append("name", payload.name);
+  fd.append("type", payload.type);
+  fd.append("reason", payload.reason);
+  if (payload.file) fd.append("file", payload.file);
+  return apiFormData("/grievances", "POST", fd);
+}
+
+export async function updateGrievance(id, payload) {
+  const fd = new FormData();
+  fd.append("states", JSON.stringify(payload.states));
+  fd.append("name", payload.name);
+  fd.append("type", payload.type);
+  fd.append("reason", payload.reason);
+  if (payload.file) fd.append("file", payload.file);
+  return apiFormData(`/grievances/${id}`, "PUT", fd);
+}
+
+export async function deleteGrievance(id) {
+  return api(`/grievances/${id}`, { method: "DELETE" });
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import FormsList from "./FormsList";
@@ -7,6 +7,7 @@ import OfficerSidebar from "./OfficerSidebar.jsx";
 import PendingForms from "./PendingForms.jsx";
 import OfficerStaticForms from "./OfficerStaticForms.jsx";
 import StaticReportView from "./StaticReportView.jsx";
+import GrievanceDetails from "./GrievanceDetails.jsx";
 
 import { getForms, getCustomSections, getCurrentUser, logoutUser } from "../store.js";
 
@@ -76,9 +77,9 @@ export default function OfficerPortal({ onSwitchToAdmin, onHome }) {
 
   useEffect(() => {
     if (state) {
-      document.title = `GA Wing Survey Portal - Officer · ${state}`;
+      document.title = `GAMIS - Officer · ${state}`;
     } else {
-      document.title = "GA Wing Survey Portal - Officer";
+      document.title = "GAMIS - Officer";
     }
   }, [state]);
 
@@ -117,7 +118,7 @@ export default function OfficerPortal({ onSwitchToAdmin, onHome }) {
         <div className="flex items-center gap-3">
           <div onClick={onHome} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-[9px] bg-gradient-to-br from-ga-blue to-ga-green font-serif text-[13px] font-extrabold text-white">GA</div>
           <div>
-            <div className="font-serif text-[15px] font-bold leading-tight text-ga-ink">GA Wing Survey Portal</div>
+            <div className="font-serif text-[15px] font-bold leading-tight text-ga-ink">GAMIS</div>
             <div className="text-[10px] text-ga-muted">Officer · {state}</div>
           </div>
         </div>
@@ -146,6 +147,9 @@ export default function OfficerPortal({ onSwitchToAdmin, onHome }) {
           )}
           {activePage === "static-report" && (
             <StaticReportView state={state} onLogout={handleLogout} />
+          )}
+          {activePage === "grievances" && (
+            <GrievanceDetails state={state} />
           )}
         </div>
       </div>

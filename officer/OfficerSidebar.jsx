@@ -15,6 +15,7 @@ export default function OfficerSidebar({ activePage, onPageChange }) {
   const menuItems = [
     { id: "pending-forms", label: "Pending Forms", icon: "📋", color: "#185FA5" },
     { id: "static-forms", label: "DA cadre & MCA/MKI", icon: "📄", color: "#0F6E56" },
+    { id: "grievances", label: "Grievance Details", icon: "📝", color: "#185FA5" },
     // { id: "static-report", label: "Static Report", icon: "📊", color: "#854F0B" },
   ];
 

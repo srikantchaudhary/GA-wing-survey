@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getResponseByStateAndForm, getDraftResponse } from "../store.js";
 import FormView from "./FormView.jsx";
+import FormReport from "./FormReport.jsx";
 import NoFormsWindow from "./NoFormsWindow.jsx";
 
 const SECTIONS_META = {
@@ -14,6 +15,9 @@ const SECTION_LABELS = { ifmis: "IFMIS", ehrms: "e-HRMS", wamis: "WAMIS", evouch
 
 export default function PendingForms({ state, forms, customSections, onLogout }) {
   const [activeForm, setActiveForm] = useState(null);
+  const [showFill, setShowFill] = useState(false);
+  const [editResponse, setEditResponse] = useState(null); // response to edit, or null for new
+  const [reportKey, setReportKey] = useState(0);
   const [formStatus, setFormStatus] = useState({});
 
   const stateForms = (forms || []).filter(f =>
@@ -54,8 +58,29 @@ export default function PendingForms({ state, forms, customSections, onLogout })
     return () => { cancelled = true; };
   }, [state, forms, onLogout]);
 
+  if (activeForm && showFill) {
+    return (
+      <FormView
+        form={activeForm}
+        state={state}
+        customSections={customSections || []}
+        editResponse={editResponse}
+        onBack={() => { setShowFill(false); setEditResponse(null); setReportKey(k => k + 1); }}
+      />
+    );
+  }
+
   if (activeForm) {
-    return <FormView form={activeForm} state={state} customSections={customSections || []} onBack={() => setActiveForm(null)} />;
+    return (
+      <FormReport
+        key={reportKey}
+        form={activeForm}
+        state={state}
+        customSections={customSections || []}
+        onBack={() => { setActiveForm(null); setShowFill(false); setEditResponse(null); }}
+        onAdd={(resp) => { setEditResponse(resp); setShowFill(true); }}
+      />
+    );
   }
 
   const pendingForms = stateForms.filter(f => {

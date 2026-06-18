@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getForms, saveForm, publishForm, deleteFormById, getCustomSections, saveCustomSection, removeCustomSection, getCurrentUser, logoutUser } from "../store.js";
 import Toast from "../components/Toast.jsx";
@@ -84,9 +84,9 @@ export default function AdminPortal({ onHome }) {
   useEffect(() => {
     const form = forms.find(f => f.id === activeId);
     if (form) {
-      document.title = `GA Wing Survey Portal - Admin · ${form.name}`;
+      document.title = `GAMIS - Admin · ${form.name}`;
     } else {
-      document.title = "GA Wing Survey Portal - Admin · Form Builder";
+      document.title = "GAMIS - Admin · Form Builder";
     }
   }, [activeId, forms]);
 
@@ -249,7 +249,7 @@ export default function AdminPortal({ onHome }) {
           </div>
           <div>
             <div className="text-[15px] font-bold text-[#2C2C2A] leading-tight font-serif">
-              GA Wing Survey Portal
+              GAMIS
             </div>
             <div className="text-[10px] text-[#888780]">
               Office of the Controller General of Accounts · Ministry of Finance

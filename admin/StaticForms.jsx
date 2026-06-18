@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDateDdMmYyyy } from "../dateUtils.js";
 import {
@@ -8,6 +8,9 @@ import {
 import { ALL_INDIAN_STATES_AND_UTS } from "../constants.js";
 import Breadcrumb from "../components/Breadcrumb.jsx";
 import AdminSidebar from "./AdminSidebar.jsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const MONTH_OPTIONS = [
   { value: "01", label: "January" },
@@ -58,8 +61,11 @@ export default function StaticForms() {
   const [filterMonth, setFilterMonth] = useState("");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ col: null, dir: "asc" });
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const downloadMenuRef = useRef(null);
 
-  useEffect(() => { document.title = "GA Wing Survey Portal - Static Report"; }, []);
+  useEffect(() => { document.title = "GAMIS - Static Report"; }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +98,113 @@ export default function StaticForms() {
     await logoutUser();
     window.dispatchEvent(new StorageEvent("storage", { key: "gawing_session", newValue: null }));
     navigate("/login", { replace: true });
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target))
+        setShowDownloadMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const downloadExcel = () => {
+    setShowDownloadMenu(false);
+    setDownloading(true);
+    try {
+      const wb = XLSX.utils.book_new();
+      if (reportType === "nomination") {
+        const rows = displayRows.map((r, i) => ({
+          "S.No": i + 1,
+          "State": r.state || "—",
+          "Employee Name": r.name || "—",
+          "Designation": r.designation || "—",
+          "Email": r.email || "—",
+          "Mobile": r.mobile || "—",
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Nominations");
+        XLSX.writeFile(wb, `GAMIS_Nominations${filterState ? "_" + filterState : ""}.xlsx`);
+      } else {
+        const rows = displayRows.map((r, i) => ({
+          "S.No": i + 1,
+          "State": r.state || "—",
+          "MCA Due": r.mcaDue ? formatDateDdMmYyyy(r.mcaDue) : "—",
+          "MCA Alloc.": r.mcaAlloc ? formatDateDdMmYyyy(r.mcaAlloc) : "—",
+          "MCA Comment": r.mcaComment || "—",
+          "MKI Due": r.mkiDue ? formatDateDdMmYyyy(r.mkiDue) : "—",
+          "MKI Alloc.": r.mkiAlloc ? formatDateDdMmYyyy(r.mkiAlloc) : "—",
+          "MKI Comment": r.mkiComment || "—",
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "MCA-MKI");
+        XLSX.writeFile(wb, `GAMIS_MCA_MKI${filterState ? "_" + filterState : ""}.xlsx`);
+      }
+    } catch (err) {
+      console.error("Excel export failed:", err);
+      alert("Failed to export Excel.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const downloadPdf = () => {
+    setShowDownloadMenu(false);
+    setDownloading(true);
+    try {
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const title = reportType === "nomination"
+        ? "Nomination of DA Cadre Officials"
+        : "MCA / MKI Records";
+      const subtitle = filterState ? `State: ${filterState}` : "All States";
+
+      doc.setFontSize(15);
+      doc.setFont("helvetica", "bold");
+      doc.text(`GAMIS — ${title}`, 14, 16);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text(`${subtitle} · Generated on ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}`, 14, 22);
+      doc.setTextColor(0);
+
+      if (reportType === "nomination") {
+        autoTable(doc, {
+          startY: 28,
+          head: [["S.No", "State", "Employee Name", "Designation", "Email", "Mobile"]],
+          body: displayRows.length
+            ? displayRows.map((r, i) => [i + 1, r.state || "—", r.name || "—", r.designation || "—", r.email || "—", r.mobile || "—"])
+            : [["—", "No data", "", "", "", ""]],
+          styles: { fontSize: 9, cellPadding: 3 },
+          headStyles: { fillColor: [24, 95, 165], textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+        });
+        doc.save(`GAMIS_Nominations${filterState ? "_" + filterState : ""}.pdf`);
+      } else {
+        autoTable(doc, {
+          startY: 28,
+          head: [["S.No", "State", "MCA Due", "MCA Alloc.", "MCA Comment", "MKI Due", "MKI Alloc.", "MKI Comment"]],
+          body: displayRows.length
+            ? displayRows.map((r, i) => [
+                i + 1, r.state || "—",
+                r.mcaDue ? formatDateDdMmYyyy(r.mcaDue) : "—",
+                r.mcaAlloc ? formatDateDdMmYyyy(r.mcaAlloc) : "—",
+                r.mcaComment || "—",
+                r.mkiDue ? formatDateDdMmYyyy(r.mkiDue) : "—",
+                r.mkiAlloc ? formatDateDdMmYyyy(r.mkiAlloc) : "—",
+                r.mkiComment || "—",
+              ])
+            : [["—", "No data", "", "", "", "", "", ""]],
+          styles: { fontSize: 9, cellPadding: 3 },
+          headStyles: { fillColor: [15, 110, 86], textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+        });
+        doc.save(`GAMIS_MCA_MKI${filterState ? "_" + filterState : ""}.pdf`);
+      }
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Failed to export PDF.");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const toggleSort = (col) =>
@@ -145,7 +258,7 @@ export default function StaticForms() {
             GA
           </div>
           <div>
-            <div className="text-[15px] font-bold text-[#2C2C2A] leading-tight font-serif">GA Wing Survey Portal</div>
+            <div className="text-[15px] font-bold text-[#2C2C2A] leading-tight font-serif">GAMIS</div>
             <div className="text-[10px] text-[#888780]">Office of the Controller General of Accounts · Ministry of Finance</div>
           </div>
         </div>
@@ -165,9 +278,54 @@ export default function StaticForms() {
           <div className="flex-1 overflow-y-auto px-8 py-7">
 
             {/* Page header */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-extrabold text-ga-ink font-serif">Static Report</h1>
-              <p className="mt-1 text-[13px] text-ga-muted">View DA cadre nominations and MCA/MKI records</p>
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-extrabold text-ga-ink font-serif">Static Report</h1>
+                <p className="mt-1 text-[13px] text-ga-muted">View DA cadre nominations and MCA/MKI records</p>
+              </div>
+
+              {/* Download dropdown */}
+              <div className="relative shrink-0" ref={downloadMenuRef}>
+                <button
+                  onClick={() => setShowDownloadMenu(v => !v)}
+                  disabled={downloading || loading}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg bg-ga-blue px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_2px_8px_rgba(24,95,165,0.25)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  {downloading ? "Downloading…" : "Download"}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {showDownloadMenu && (
+                  <div className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-xl border border-ga-border bg-white shadow-[0_8px_28px_rgba(0,0,0,0.13)]">
+                    <div className="border-b border-ga-border bg-ga-cream px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-ga-muted">
+                      Choose Format
+                    </div>
+                    <button
+                      onClick={downloadExcel}
+                      className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent px-4 py-3 text-left text-[13px] font-semibold text-ga-ink hover:bg-ga-cream transition-colors"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#E1F5EE] text-[15px]">📊</span>
+                      Download as Excel
+                      <span className="ml-auto text-[10px] text-ga-muted">.xlsx</span>
+                    </button>
+                    <button
+                      onClick={downloadPdf}
+                      className="flex w-full cursor-pointer items-center gap-3 border-none border-t border-ga-line bg-transparent px-4 py-3 text-left text-[13px] font-semibold text-ga-ink hover:bg-ga-cream transition-colors"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#FAEEDA] text-[15px]">📄</span>
+                      Download as PDF
+                      <span className="ml-auto text-[10px] text-ga-muted">.pdf</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Filter bar */}

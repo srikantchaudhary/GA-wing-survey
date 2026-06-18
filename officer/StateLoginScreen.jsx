@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { ALL_INDIAN_STATES_AND_UTS } from "../constants.js";
 import { getStates } from "../store.js";
 
@@ -28,7 +28,7 @@ export default function StateLoginScreen({ onLogin, onHome }) {
     <div className="flex min-h-screen flex-col items-center justify-center bg-ga-cream p-6">
       <div className="mb-9 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-ga-blue to-ga-green font-serif text-[22px] font-extrabold text-white shadow-[0_8px_24px_rgba(24,95,165,0.3)]">GA</div>
-        <div className="font-serif text-xl font-extrabold text-ga-ink">GA Wing Survey Portal</div>
+        <div className="font-serif text-xl font-extrabold text-ga-ink">GAMIS</div>
         <div className="mt-1 text-xs text-ga-muted">Office of the Controller General of Accounts · Ministry of Finance</div>
       </div>
 

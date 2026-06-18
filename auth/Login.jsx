@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser, getCurrentUser } from "../store.js";
 
@@ -17,7 +17,7 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    document.title = "GA Wing Survey Portal - Sign In";
+    document.title = "GAMIS - Sign In";
 
     // Redirect if already logged in
     let mounted = true;
@@ -84,7 +84,7 @@ export default function Login() {
         <div className="w-16 h-16 rounded-2xl mx-auto mb-4 bg-gradient-to-br from-[#185FA5] to-[#0F6E56] flex items-center justify-center text-white text-[22px] font-extrabold font-serif shadow-[0_8px_24px_rgba(24,95,165,0.3)]">
           GA
         </div>
-        <div className="text-xl font-extrabold text-[#2C2C2A] font-serif">GA Wing Survey Portal</div>
+        <div className="text-xl font-extrabold text-[#2C2C2A] font-serif">GAMIS</div>
         <div className="text-xs text-[#888780] mt-1">Office of the Controller General of Accounts · Ministry of Finance</div>
       </div>
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { getResponseByStateAndForm, saveResponse, getDraftResponse, saveDraftResponse, getStates } from "../store.js";
+import { getResponseByStateAndForm, saveResponse, updateResponse, getDraftResponse, saveDraftResponse, getStates } from "../store.js";
 import { SUBMISSION_FIELDS, getFormSections } from "../formSchema.js";
 import { getTodayIsoDate } from "../dateUtils.js";
 import FormField from "./FormField.jsx";
@@ -15,13 +15,14 @@ function ProgressBar({ pct, barClass }) {
   );
 }
 
-export default function FormView({ form, state, customSections, onBack }) {
+export default function FormView({ form, state, customSections, onBack, editResponse }) {
   const safeCustomSections = customSections || [];
   const safeForm = form || { sections: [], formId: '', name: '', surveyYear: '', description: '' };
 
-  const [formData, setFormData]     = useState({ sub_date: getTodayIsoDate() });
-  const [errors, setErrors]         = useState({});
+  const [formData, setFormData]         = useState({ sub_date: getTodayIsoDate() });
+  const [errors, setErrors]             = useState({});
   const [hasExistingSubmission, setHasExistingSubmission] = useState(false);
+  const [existingResponseId, setExistingResponseId] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(null);
@@ -52,19 +53,33 @@ export default function FormView({ form, state, customSections, onBack }) {
     let cancelled = false;
     (async () => {
       try {
+        // If a specific response was passed for editing, pre-load it directly
+        if (editResponse) {
+          if (!cancelled) {
+            setExistingResponseId(editResponse.id);
+            setFormData({
+              ...editResponse.data,
+              sub_date: editResponse.data?.sub_date || editResponse.submittedAt?.slice(0, 10) || todayIso,
+            });
+            setHasExistingSubmission(true);
+            setLoading(false);
+          }
+          return;
+        }
+
         const [existing, savedDraft] = await Promise.all([
           getResponseByStateAndForm(state, safeForm.formId),
           getDraftResponse(state, safeForm.formId),
         ]);
         if (cancelled) return;
         if (existing) {
+          setExistingResponseId(existing.id);
           setFormData({
             ...existing.data,
             sub_date: existing.data?.sub_date || existing.submittedAt?.slice(0, 10) || todayIso,
           });
           setHasExistingSubmission(true);
         } else if (savedDraft) {
-          // Submission date is always the current system date until submitted.
           setFormData({ ...savedDraft.data, sub_date: todayIso });
           setDraftSavedAt(savedDraft.savedAt || null);
         } else {
@@ -77,7 +92,7 @@ export default function FormView({ form, state, customSections, onBack }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [state, safeForm.formId]);
+  }, [state, safeForm.formId, editResponse]);
 
   const allSections = getFormSections(safeForm, safeCustomSections);
 
@@ -123,13 +138,21 @@ export default function FormView({ form, state, customSections, onBack }) {
     if (!validate()) return;
     try {
       const todayIso = getTodayIsoDate();
-      await saveResponse({
-        formId: safeForm.formId,
-        formName: safeForm.name,
-        state,
-        surveyYear: safeForm.surveyYear,
-        data: { ...formData, sub_date: todayIso },
-      });
+      const payload = { ...formData, sub_date: todayIso };
+      if (existingResponseId) {
+        // Edit — update the existing record, do not create a new one
+        await updateResponse(existingResponseId, payload);
+      } else {
+        // First submission — create a new record
+        const saved = await saveResponse({
+          formId: safeForm.formId,
+          formName: safeForm.name,
+          state,
+          surveyYear: safeForm.surveyYear,
+          data: payload,
+        });
+        setExistingResponseId(saved?.id ?? null);
+      }
       setFormData(d => ({ ...d, sub_date: todayIso }));
       setHasExistingSubmission(true);
       setShowSuccess(true);

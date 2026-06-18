@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatDateDdMmYyyy } from "../dateUtils.js";
 import {
@@ -235,12 +235,12 @@ function McaModal({ state, record, onClose, onSave }) {
                   <input type="date" value={form.mcaDue} onChange={e => set("mcaDue", e.target.value)} className={`${inp} border-ga-line bg-white`} />
                 </div>
                 <div>
-                  <label className={lbl}>Allocation Date</label>
+                  <label className={lbl}>Actual Date</label>
                   <input type="date" value={form.mcaAlloc} onChange={e => set("mcaAlloc", e.target.value)} className={`${inp} border-ga-line bg-white`} />
                 </div>
               </div>
               <div>
-                <label className={lbl}>Comment</label>
+                <label className={lbl}>Reason of Delay if any.</label>
                 <textarea value={form.mcaComment} onChange={e => set("mcaComment", e.target.value)} placeholder="MCA remarks…" rows={3} maxLength={1000} className={`${inp} resize-none border-ga-line bg-white`} />
               </div>
             </div>
@@ -253,12 +253,12 @@ function McaModal({ state, record, onClose, onSave }) {
                   <input type="date" value={form.mkiDue} onChange={e => set("mkiDue", e.target.value)} className={`${inp} border-ga-line bg-white`} />
                 </div>
                 <div>
-                  <label className={lbl}>Allocation Date</label>
+                  <label className={lbl}>Actual Date</label>
                   <input type="date" value={form.mkiAlloc} onChange={e => set("mkiAlloc", e.target.value)} className={`${inp} border-ga-line bg-white`} />
                 </div>
               </div>
               <div>
-                <label className={lbl}>Comment</label>
+                <label className={lbl}>Reason of delay if any.</label>
                 <textarea value={form.mkiComment} onChange={e => set("mkiComment", e.target.value)} placeholder="MKI remarks…" rows={3} maxLength={1000} className={`${inp} resize-none border-ga-line bg-white`} />
               </div>
             </div>
@@ -292,7 +292,7 @@ export default function OfficerStaticForms({ state }) {
   const [mcaSearch, setMcaSearch] = useState("");
   const [mcaSort, setMcaSort] = useState({ col: null, dir: "asc" });
 
-  useEffect(() => { document.title = "GA Wing Survey Portal - Static Forms"; }, []);
+  useEffect(() => { document.title = "GAMIS - Static Forms"; }, []);
 
   useEffect(() => {
     let cancelled = false;

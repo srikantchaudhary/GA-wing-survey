@@ -14,6 +14,7 @@ import nominationsRoutes from "./routes/nominations.routes.js";
 import mcaMkiRoutes from "./routes/mca-mki.routes.js";
 import statesRoutes from "./routes/states.routes.js";
 import designationsRoutes from "./routes/designations.routes.js";
+import grievancesRoutes from "./routes/grievances.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -29,6 +30,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -48,6 +50,7 @@ app.use("/api/nominations", nominationsRoutes);
 app.use("/api/mca-mki", mcaMkiRoutes);
 app.use("/api/states", statesRoutes);
 app.use("/api/designations", designationsRoutes);
+app.use("/api/grievances", grievancesRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
