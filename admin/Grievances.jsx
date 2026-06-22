@@ -225,7 +225,7 @@ export default function Grievances() {
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="bg-[#F7F5EF] border-b border-[#E8E6DF]">
-                        {["#", "State", "Name", "Type", "Reason", "File", "Submitted On", "Actions"].map((h) => (
+                        {["#", "State", "Subject", "Type", "Remarks", "File", "Submitted On", "Actions"].map((h) => (
                           <th key={h} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#888780] whitespace-nowrap">
                             {h}
                           </th>

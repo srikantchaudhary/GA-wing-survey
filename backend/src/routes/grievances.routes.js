@@ -59,6 +59,30 @@ router.get("/", authRequired, async (req, res) => {
   }
 });
 
+// GET /api/grievances/:id/view — stream file inline (no forced download)
+router.get("/:id/view", authRequired, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT file_path, file_name, file_mime FROM grievances WHERE id = ?",
+      [req.params.id]
+    );
+    if (!rows.length || !rows[0].file_path) {
+      return res.status(404).json({ error: "No file attached to this record." });
+    }
+    const { file_path, file_name, file_mime } = rows[0];
+    const fullPath = path.join(uploadsDir, file_path);
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: "File not found on disk." });
+    }
+    res.setHeader("Content-Type", file_mime || "application/octet-stream");
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file_name)}"`);
+    fs.createReadStream(fullPath).pipe(res);
+  } catch (err) {
+    console.error("GET /grievances/:id/view", err);
+    res.status(500).json({ error: "Failed to serve file." });
+  }
+});
+
 // POST /api/grievances
 router.post("/", authRequired, requireRole("admin"), upload.single("file"), async (req, res) => {
   try {

@@ -17,6 +17,7 @@ export default function PendingForms({ state, forms, customSections, onLogout })
   const [activeForm, setActiveForm] = useState(null);
   const [showFill, setShowFill] = useState(false);
   const [editResponse, setEditResponse] = useState(null); // response to edit, or null for new
+  const [forceNew, setForceNew] = useState(false); // true = open blank form, always POST
   const [reportKey, setReportKey] = useState(0);
   const [formStatus, setFormStatus] = useState({});
 
@@ -65,7 +66,8 @@ export default function PendingForms({ state, forms, customSections, onLogout })
         state={state}
         customSections={customSections || []}
         editResponse={editResponse}
-        onBack={() => { setShowFill(false); setEditResponse(null); setReportKey(k => k + 1); }}
+        forceNew={forceNew}
+        onBack={() => { setShowFill(false); setEditResponse(null); setForceNew(false); setReportKey(k => k + 1); }}
       />
     );
   }
@@ -77,8 +79,9 @@ export default function PendingForms({ state, forms, customSections, onLogout })
         form={activeForm}
         state={state}
         customSections={customSections || []}
-        onBack={() => { setActiveForm(null); setShowFill(false); setEditResponse(null); }}
-        onAdd={(resp) => { setEditResponse(resp); setShowFill(true); }}
+        onBack={() => { setActiveForm(null); setShowFill(false); setEditResponse(null); setForceNew(false); }}
+        onAdd={(resp) => { setEditResponse(resp); setForceNew(false); setShowFill(true); }}
+        onAddNew={() => { setEditResponse(null); setForceNew(true); setShowFill(true); }}
       />
     );
   }

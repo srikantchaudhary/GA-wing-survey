@@ -10,6 +10,7 @@ const OfficerPortal = lazy(() => import("./officer/OfficerPortal.jsx"));
 const Dashboard = lazy(() => import("./admin/Dashboard.jsx"));
 const StaticForms = lazy(() => import("./admin/StaticForms.jsx"));
 const Grievances = lazy(() => import("./admin/Grievances.jsx"));
+const FormResponseReport = lazy(() => import("./admin/FormResponseReport.jsx"));
 const NotFound = lazy(() => import("./components/NotFound.jsx"));
 const Login = lazy(() => import("./auth/Login.jsx"));
 const Signup = lazy(() => import("./auth/Signup.jsx"));
@@ -492,6 +493,35 @@ function GrievancesWrapper() {
   return <Grievances />;
 }
 
+function FormResponseReportWrapper() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    document.title = "GAMIS - Form Response Report";
+    const fetchUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "admin") {
+          navigate("/login");
+          return;
+        }
+      } catch {
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center bg-ga-cream font-sans text-ga-muted">Loading...</div>;
+  }
+
+  return <FormResponseReport />;
+}
+
 function OfficerWrapper() {
   const navigate = useNavigate();
   return <OfficerPortal onSwitchToAdmin={() => navigate("/admin")} onHome={() => navigate("/")} />;
@@ -511,6 +541,7 @@ export default function App() {
           <Route path="/admin/dashboard" element={<DashboardWrapper />} />
           <Route path="/admin/static-forms" element={<StaticFormsWrapper />} />
           <Route path="/admin/grievances" element={<GrievancesWrapper />} />
+          <Route path="/admin/form-report" element={<FormResponseReportWrapper />} />
           <Route path="/officer" element={<OfficerWrapper />} />
           <Route path="/officer/:state" element={<OfficerWrapper />} />
           <Route path="*" element={<NotFound />} />

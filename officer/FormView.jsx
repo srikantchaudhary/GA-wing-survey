@@ -15,7 +15,7 @@ function ProgressBar({ pct, barClass }) {
   );
 }
 
-export default function FormView({ form, state, customSections, onBack, editResponse }) {
+export default function FormView({ form, state, customSections, onBack, editResponse, forceNew = false }) {
   const safeCustomSections = customSections || [];
   const safeForm = form || { sections: [], formId: '', name: '', surveyYear: '', description: '' };
 
@@ -53,6 +53,15 @@ export default function FormView({ form, state, customSections, onBack, editResp
     let cancelled = false;
     (async () => {
       try {
+        // Force-new: skip all lookups, open a completely blank form
+        if (forceNew) {
+          if (!cancelled) {
+            setFormData({ sub_date: todayIso });
+            setLoading(false);
+          }
+          return;
+        }
+
         // If a specific response was passed for editing, pre-load it directly
         if (editResponse) {
           if (!cancelled) {
@@ -92,7 +101,7 @@ export default function FormView({ form, state, customSections, onBack, editResp
       }
     })();
     return () => { cancelled = true; };
-  }, [state, safeForm.formId, editResponse]);
+  }, [state, safeForm.formId, editResponse, forceNew]);
 
   const allSections = getFormSections(safeForm, safeCustomSections);
 

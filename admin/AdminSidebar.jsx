@@ -16,6 +16,7 @@ export default function AdminSidebar({ activePage }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: "📊", path: "/admin/dashboard" },
     { id: "admin", label: "Form Management", icon: "🛠", path: "/admin" },
+    { id: "form-report", label: "Form Response Report", icon: "📈", path: "/admin/form-report" },
     { id: "static-forms", label: "DA cadre & MCA/MKI Report", icon: "📋", path: "/admin/static-forms" },
     { id: "grievances", label: "Grievances", icon: "📝", path: "/admin/grievances" },
   ];
@@ -44,7 +45,7 @@ export default function AdminSidebar({ activePage }) {
             key={item.id}
             onClick={() => handleItemClick(item.path)}
             className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer border-none text-lg ${
-              location.pathname === item.path || (item.id === "admin" && location.pathname.startsWith("/admin") && location.pathname !== "/admin/dashboard" && location.pathname !== "/admin/static-forms" && location.pathname !== "/admin/grievances")
+              location.pathname === item.path || (item.id === "admin" && location.pathname.startsWith("/admin") && location.pathname !== "/admin/dashboard" && location.pathname !== "/admin/static-forms" && location.pathname !== "/admin/grievances" && location.pathname !== "/admin/form-report")
                 ? "bg-[#E6F1FB] text-[#185FA5]"
                 : "text-[#2C2C2A] hover:bg-[#E6F1FB] transition-colors"
             }`}
@@ -74,7 +75,7 @@ export default function AdminSidebar({ activePage }) {
           key={item.id}
           onClick={() => handleItemClick(item.path)}
           className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-sm font-medium cursor-pointer border-none ${
-            location.pathname === item.path || (item.id === "admin" && location.pathname.startsWith("/admin") && location.pathname !== "/admin/dashboard" && location.pathname !== "/admin/static-forms" && location.pathname !== "/admin/grievances")
+            location.pathname === item.path || (item.id === "admin" && location.pathname.startsWith("/admin") && location.pathname !== "/admin/dashboard" && location.pathname !== "/admin/static-forms" && location.pathname !== "/admin/grievances" && location.pathname !== "/admin/form-report")
               ? "bg-[#E6F1FB] text-[#185FA5]"
               : "text-[#2C2C2A] hover:bg-[#E6F1FB] transition-colors"
           }`}
