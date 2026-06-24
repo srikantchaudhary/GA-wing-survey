@@ -96,12 +96,20 @@ export default function AdminPortal({ onHome }) {
     toastRef.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 2800);
   };
 
+  // Merge a single saved form into the list (update existing or prepend new)
+  const mergeSaved = (saved, isNew = false) =>
+    setForms(prev =>
+      isNew
+        ? [saved, ...prev.filter(f => f.id !== saved.id)]
+        : prev.map(f => f.id === saved.id ? saved : f)
+    );
+
   const handleUpdate = async (id, patch) => {
     const updated = forms.map(f => f.id === id ? { ...f, ...patch } : f);
     setForms(updated);
     try {
-      const newForms = await saveForm(updated.find(f => f.id === id));
-      setForms(newForms);
+      const saved = await saveForm(updated.find(f => f.id === id));
+      mergeSaved(saved);
     } catch {
       showToast("Failed to save changes", "error");
     }
@@ -110,8 +118,8 @@ export default function AdminPortal({ onHome }) {
   const handleSaveDraft = async (id) => {
     const form = forms.find(f => f.id === id);
     try {
-      const newForms = await saveForm({ ...form, status: "draft" });
-      setForms(newForms);
+      const saved = await saveForm({ ...form, status: "draft" });
+      mergeSaved(saved);
       showToast("💾 Saved as Draft", "draft");
     } catch {
       showToast("Failed to save draft", "error");
@@ -121,8 +129,8 @@ export default function AdminPortal({ onHome }) {
   const handleSendReview = async (id) => {
     const form = forms.find(f => f.id === id);
     try {
-      const newForms = await saveForm({ ...form, status: "review" });
-      setForms(newForms);
+      const saved = await saveForm({ ...form, status: "review" });
+      mergeSaved(saved);
       showToast("🔍 Sent for Review", "review");
     } catch {
       showToast("Failed to send for review", "error");
@@ -132,8 +140,8 @@ export default function AdminPortal({ onHome }) {
   const handlePublish = async (id) => {
     const form = forms.find(f => f.id === id);
     try {
-      const newForms = await publishForm(id, form.states);
-      setForms(newForms);
+      const saved = await publishForm(id, form.states);
+      mergeSaved(saved);
       showToast(`🚀 Published for ${form.states.length} state${form.states.length > 1 ? "s" : ""}!`, "success");
     } catch {
       showToast("Failed to publish", "error");
@@ -144,7 +152,7 @@ export default function AdminPortal({ onHome }) {
     const f = forms.find(x => x.id === id);
     const newId = Date.now();
     try {
-      const newForms = await saveForm({
+      const saved = await saveForm({
         ...f,
         id: newId,
         name: `${f.name} (Copy)`,
@@ -153,7 +161,7 @@ export default function AdminPortal({ onHome }) {
         formId: `GAW-CLONE-${newId}`,
         createdAt: new Date().toISOString(),
       });
-      setForms(newForms);
+      mergeSaved(saved, true);
       isUserInitiatedRef.current = true;
       setActiveId(newId);
       showToast("🔀 Cloned to new Draft", "draft");
@@ -165,7 +173,7 @@ export default function AdminPortal({ onHome }) {
   const handleNewForm = async () => {
     const newId = Date.now();
     try {
-      const newForms = await saveForm({
+      const saved = await saveForm({
         id: newId,
         name: `New Survey Form ${forms.length + 1}`,
         sections: [],
@@ -177,7 +185,7 @@ export default function AdminPortal({ onHome }) {
         createdAt: new Date().toISOString(),
         savedAt: new Date().toISOString(),
       });
-      setForms(newForms);
+      mergeSaved(saved, true);
       isUserInitiatedRef.current = true;
       setActiveId(newId);
       showToast("✚ New form created", "draft");
@@ -188,11 +196,12 @@ export default function AdminPortal({ onHome }) {
 
   const handleDelete = async (id) => {
     try {
-      const newForms = await deleteFormById(id);
-      setForms(newForms);
+      await deleteFormById(id);
+      const remaining = forms.filter(f => f.id !== id);
+      setForms(remaining);
       if (activeId === id) {
         isUserInitiatedRef.current = true;
-        setActiveId(newForms[0]?.id || null);
+        setActiveId(remaining[0]?.id || null);
       }
       showToast("🗑 Form deleted", "error");
     } catch (err) {

@@ -55,9 +55,9 @@ router.put("/", authRequired, requireStateAccess, async (req, res) => {
     const savedAt = new Date();
     await pool.query(
       `INSERT INTO draft_responses (state, form_id, data, created_by, created_date, updated_by, updated_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE data = VALUES(data), updated_by = VALUES(updated_by), updated_date = VALUES(updated_date)`,
-      [state, formId, JSON.stringify(data), req.user.id || null, savedAt, req.user.id || null, savedAt]
+       VALUES (?, ?, ?, ?, NOW(), NULL, NULL)
+       ON DUPLICATE KEY UPDATE data = VALUES(data), updated_by = ?, updated_date = NOW()`,
+      [state, formId, JSON.stringify(data), req.user.id || null, req.user.id || null]
     );
     res.json({ data, savedAt: savedAt.toISOString() });
   } catch (err) {

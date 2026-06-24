@@ -35,7 +35,7 @@ export default function CreateSectionWizard({ onClose, onAdd }) {
 
   const handleColCount = (n) => {
     setColCount(n);
-    setColumns(Array.from({ length: n }, () => ({ name: "", dataType: "text", dropdownOptions: [], checkboxOptions: [] })));
+    setColumns(Array.from({ length: n }, () => ({ name: "", dataType: "text", required: false, dropdownOptions: [], checkboxOptions: [] })));
     setStep(3);
   };
 
@@ -54,6 +54,7 @@ export default function CreateSectionWizard({ onClose, onAdd }) {
       columns: columns.map(c => ({
         name: c.name.trim(),
         dataType: c.dataType,
+        required: c.required === true,
         placeholder: getPlaceholder(c.dataType),
         dropdownOptions: c.dropdownOptions || [],
         checkboxOptions: c.checkboxOptions || [],

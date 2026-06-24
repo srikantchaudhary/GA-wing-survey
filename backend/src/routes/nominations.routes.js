@@ -15,7 +15,7 @@ function rowToNomination(row) {
     createdBy: row.created_by ? Number(row.created_by) : null,
     createdAt: new Date(row.created_date).toISOString(),
     updatedBy: row.updated_by ? Number(row.updated_by) : null,
-    updatedAt: new Date(row.updated_date).toISOString(),
+    updatedAt: row.updated_date ? new Date(row.updated_date).toISOString() : null,
   };
 }
 
@@ -54,8 +54,8 @@ router.post("/", authRequired, requireStateAccess, async (req, res) => {
     const id = Date.now();
     await pool.query(
       `INSERT INTO da_nominations (id, state, employee_name, designation, email, mobile, created_by, created_date, updated_by, updated_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, state, name.trim(), designation, email.trim(), mobile.trim(), req.user.id || null, new Date(), req.user.id || null, new Date()]
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL)`,
+      [id, state, name.trim(), designation, email.trim(), mobile.trim(), req.user.id || null]
     );
     const [rows] = await pool.query("SELECT * FROM da_nominations WHERE id = ?", [id]);
     res.status(201).json(rowToNomination(rows[0]));

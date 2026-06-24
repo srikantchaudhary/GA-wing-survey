@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import pool from "./config/db.js";
+import { authRequired, apiOnly } from "./middleware/auth.js";
 import authRoutes from "./routes/auth.routes.js";
 import formsRoutes from "./routes/forms.routes.js";
 import sectionsRoutes from "./routes/sections.routes.js";
@@ -30,7 +31,9 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Uploaded files (grievance attachments) are only accessible to authenticated users.
+// Use GET /api/grievances/:id/view for state-scoped access instead of direct URL.
+app.use("/uploads", authRequired, express.static(path.join(__dirname, "../uploads")));
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -40,6 +43,9 @@ app.get("/api/health", async (_req, res) => {
     res.status(503).json({ ok: false, message: "Database unavailable", error: err.message });
   }
 });
+
+// Block direct browser URL-bar navigation to all API routes (except /health above)
+app.use("/api", apiOnly);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/forms", formsRoutes);

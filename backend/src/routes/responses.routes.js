@@ -12,17 +12,20 @@ function rowToResponse(row) {
     state: row.state,
     surveyYear: row.survey_year,
     data: typeof row.data === "string" ? JSON.parse(row.data) : row.data,
-    submittedAt: new Date(row.submitted_at).toISOString(),
+    submittedAt: new Date(row.created_date).toISOString(),
     officerId: row.officer_id ? Number(row.officer_id) : null,
     officerName: row.officer_name || null,
     officerEmail: row.officer_email || null,
+    approvalStatus: row.approval_status || "pending",
+    approvedBy: row.approved_by ? Number(row.approved_by) : null,
+    approvedAt: row.approved_at ? new Date(row.approved_at).toISOString() : null,
   };
 }
 
 // GET /api/responses - Admin only
 router.get("/", authRequired, requireRole("admin"), async (_req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM responses ORDER BY submitted_at DESC");
+    const [rows] = await pool.query("SELECT * FROM responses ORDER BY created_date DESC");
     res.json(rows.map(rowToResponse));
   } catch (err) {
     console.error("GET /responses", err);
@@ -34,13 +37,39 @@ router.get("/", authRequired, requireRole("admin"), async (_req, res) => {
 router.get("/form/:formId", authRequired, requireRole("admin"), async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT * FROM responses WHERE form_id = ? ORDER BY submitted_at DESC",
+      "SELECT * FROM responses WHERE form_id = ? ORDER BY created_date DESC",
       [req.params.formId]
     );
     res.json(rows.map(rowToResponse));
   } catch (err) {
     console.error("GET /responses/form/:formId", err);
     res.status(500).json({ error: "Failed to load responses." });
+  }
+});
+
+// GET /api/responses/is-finalized?state=&formId=
+// Returns per-record summary: hasApproved, hasRejected (used for officer banners)
+router.get("/is-finalized", authRequired, requireStateAccess, async (req, res) => {
+  try {
+    const { state, formId } = req.query;
+    if (!state || !formId) {
+      return res.status(400).json({ error: "state and formId are required." });
+    }
+    const [rows] = await pool.query(
+      "SELECT approval_status FROM responses WHERE LOWER(state) = LOWER(?) AND form_id = ?",
+      [state, formId]
+    );
+    const hasApproved = rows.some(r => r.approval_status === "approved");
+    const hasRejected = rows.some(r => r.approval_status === "rejected");
+    res.json({
+      isFinalized: hasApproved,
+      hasApproved,
+      hasRejected,
+      finalizedAt: null,
+    });
+  } catch (err) {
+    console.error("GET /responses/is-finalized", err);
+    res.status(500).json({ error: "Failed to check finalization status." });
   }
 });
 
@@ -52,7 +81,7 @@ router.get("/lookup", authRequired, requireStateAccess, async (req, res) => {
       return res.status(400).json({ error: "state and formId are required." });
     }
     const [rows] = await pool.query(
-      "SELECT * FROM responses WHERE LOWER(state) = LOWER(?) AND form_id = ? ORDER BY submitted_at ASC LIMIT 1",
+      "SELECT * FROM responses WHERE LOWER(state) = LOWER(?) AND form_id = ? ORDER BY created_date ASC LIMIT 1",
       [state, formId]
     );
     res.json(rows.length ? rowToResponse(rows[0]) : null);
@@ -70,7 +99,7 @@ router.get("/lookup-all", authRequired, requireStateAccess, async (req, res) => 
       return res.status(400).json({ error: "state and formId are required." });
     }
     const [rows] = await pool.query(
-      "SELECT * FROM responses WHERE LOWER(state) = LOWER(?) AND form_id = ? ORDER BY submitted_at ASC",
+      "SELECT * FROM responses WHERE LOWER(state) = LOWER(?) AND form_id = ? ORDER BY created_date ASC",
       [state, formId]
     );
     res.json(rows.map(rowToResponse));
@@ -80,7 +109,28 @@ router.get("/lookup-all", authRequired, requireStateAccess, async (req, res) => 
   }
 });
 
-// POST /api/responses - Create a new response (pure INSERT, no overwrite)
+// POST /api/responses/approve-bulk — Admin: approve or reject individual response records by ID
+router.post("/approve-bulk", authRequired, requireRole("admin"), async (req, res) => {
+  try {
+    const { responseIds, status = "approved" } = req.body;
+    if (!Array.isArray(responseIds) || responseIds.length === 0) {
+      return res.status(400).json({ error: "responseIds[] is required." });
+    }
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ error: "status must be 'approved' or 'rejected'." });
+    }
+    await pool.query(
+      "UPDATE responses SET approval_status = ?, approved_by = ?, approved_at = NOW() WHERE id IN (?)",
+      [status, req.user.id, responseIds]
+    );
+    res.json({ ok: true, count: responseIds.length, status });
+  } catch (err) {
+    console.error("POST /responses/approve-bulk", err);
+    res.status(500).json({ error: "Failed to update record status." });
+  }
+});
+
+// POST /api/responses - Create a new response (always allowed; starts as pending)
 router.post("/", authRequired, requireStateAccess, async (req, res) => {
   try {
     const { formId, formName, state, surveyYear, data } = req.body;
@@ -95,10 +145,14 @@ router.post("/", authRequired, requireStateAccess, async (req, res) => {
     const payload = { ...data, sub_date: new Date().toISOString().slice(0, 10) };
 
     await pool.query(
-      `INSERT INTO responses (id, form_id, form_name, state, survey_year, data, submitted_at, officer_id, officer_name, officer_email)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, formId, formName || null, state, surveyYear || null, JSON.stringify(payload), new Date(),
-       req.user.id, req.user.name, req.user.email]
+      `INSERT INTO responses
+         (id, form_id, form_name, state, survey_year, data,
+          officer_id, officer_name, officer_email,
+          created_by, created_date, updated_by, updated_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL)`,
+      [id, formId, formName || null, state, surveyYear || null, JSON.stringify(payload),
+       req.user.id, req.user.name, req.user.email,
+       req.user.id]
     );
 
     await pool.query(
@@ -132,10 +186,19 @@ router.put("/:id", authRequired, requireStateAccess, async (req, res) => {
       return res.status(403).json({ error: "You can only update your own state's responses." });
     }
 
+    // Block edits on individually approved records
+    if (existing[0].approval_status === "approved") {
+      return res.status(403).json({ error: "This record has been approved and cannot be edited." });
+    }
+
     const payload = { ...data, sub_date: new Date().toISOString().slice(0, 10) };
     await pool.query(
-      `UPDATE responses SET data = ?, submitted_at = ?, officer_id = ?, officer_name = ?, officer_email = ? WHERE id = ?`,
-      [JSON.stringify(payload), new Date(), req.user.id, req.user.name, req.user.email, id]
+      `UPDATE responses
+       SET data = ?, officer_id = ?, officer_name = ?, officer_email = ?,
+           updated_by = ?, updated_date = NOW()
+       WHERE id = ?`,
+      [JSON.stringify(payload), req.user.id, req.user.name, req.user.email,
+       req.user.id, id]
     );
 
     const [rows] = await pool.query("SELECT * FROM responses WHERE id = ?", [id]);
@@ -146,7 +209,7 @@ router.put("/:id", authRequired, requireStateAccess, async (req, res) => {
   }
 });
 
-// POST /api/responses/:id/duplicate - Insert a copy of an existing response
+// POST /api/responses/:id/duplicate - Insert a copy; duplicate always starts as pending
 router.post("/:id/duplicate", authRequired, requireStateAccess, async (req, res) => {
   try {
     const sourceId = Number(req.params.id);
@@ -162,10 +225,14 @@ router.post("/:id/duplicate", authRequired, requireStateAccess, async (req, res)
     const src = existing[0];
     const newId = Date.now();
     await pool.query(
-      `INSERT INTO responses (id, form_id, form_name, state, survey_year, data, submitted_at, officer_id, officer_name, officer_email)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO responses
+         (id, form_id, form_name, state, survey_year, data,
+          officer_id, officer_name, officer_email,
+          created_by, created_date, updated_by, updated_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL)`,
       [newId, src.form_id, src.form_name, src.state, src.survey_year,
-       src.data, new Date(), req.user.id, req.user.name, req.user.email]
+       src.data, req.user.id, req.user.name, req.user.email,
+       req.user.id]
     );
 
     const [rows] = await pool.query("SELECT * FROM responses WHERE id = ?", [newId]);

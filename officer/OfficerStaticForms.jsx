@@ -194,7 +194,18 @@ function McaModal({ state, record, onClose, onSave }) {
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: undefined })); };
 
+  const validate = () => {
+    const e = {};
+    if (!form.mcaDue)   e.mcaDue   = "MCA Due Date is required.";
+    if (!form.mcaAlloc) e.mcaAlloc = "MCA Actual Date is required.";
+    if (!form.mkiDue)   e.mkiDue   = "MKI Due Date is required.";
+    if (!form.mkiAlloc) e.mkiAlloc = "MKI Actual Date is required.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const submit = async () => {
+    if (!validate()) return;
     setSaving(true);
     try {
       await onSave({ ...form, state }, isEdit ? record.id : null);
@@ -231,12 +242,14 @@ function McaModal({ state, record, onClose, onSave }) {
               <p className="border-b border-ga-border pb-2 text-sm font-bold text-ga-ink">MCA Fields</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={lbl}>Due Date</label>
-                  <input type="date" value={form.mcaDue} onChange={e => set("mcaDue", e.target.value)} className={`${inp} border-ga-line bg-white`} />
+                  <label className={lbl}>Due Date <span className="text-ga-error">*</span></label>
+                  <input type="date" value={form.mcaDue} onChange={e => set("mcaDue", e.target.value)} className={`${inp} ${bdr(errors.mcaDue)}`} />
+                  {errors.mcaDue && <p className="mt-1 text-[11px] text-ga-error">{errors.mcaDue}</p>}
                 </div>
                 <div>
-                  <label className={lbl}>Actual Date</label>
-                  <input type="date" value={form.mcaAlloc} onChange={e => set("mcaAlloc", e.target.value)} className={`${inp} border-ga-line bg-white`} />
+                  <label className={lbl}>Actual Date <span className="text-ga-error">*</span></label>
+                  <input type="date" value={form.mcaAlloc} onChange={e => set("mcaAlloc", e.target.value)} className={`${inp} ${bdr(errors.mcaAlloc)}`} />
+                  {errors.mcaAlloc && <p className="mt-1 text-[11px] text-ga-error">{errors.mcaAlloc}</p>}
                 </div>
               </div>
               <div>
@@ -249,12 +262,14 @@ function McaModal({ state, record, onClose, onSave }) {
               <p className="border-b border-ga-border pb-2 text-sm font-bold text-ga-ink">MKI Fields</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={lbl}>Due Date</label>
-                  <input type="date" value={form.mkiDue} onChange={e => set("mkiDue", e.target.value)} className={`${inp} border-ga-line bg-white`} />
+                  <label className={lbl}>Due Date <span className="text-ga-error">*</span></label>
+                  <input type="date" value={form.mkiDue} onChange={e => set("mkiDue", e.target.value)} className={`${inp} ${bdr(errors.mkiDue)}`} />
+                  {errors.mkiDue && <p className="mt-1 text-[11px] text-ga-error">{errors.mkiDue}</p>}
                 </div>
                 <div>
-                  <label className={lbl}>Actual Date</label>
-                  <input type="date" value={form.mkiAlloc} onChange={e => set("mkiAlloc", e.target.value)} className={`${inp} border-ga-line bg-white`} />
+                  <label className={lbl}>Actual Date <span className="text-ga-error">*</span></label>
+                  <input type="date" value={form.mkiAlloc} onChange={e => set("mkiAlloc", e.target.value)} className={`${inp} ${bdr(errors.mkiAlloc)}`} />
+                  {errors.mkiAlloc && <p className="mt-1 text-[11px] text-ga-error">{errors.mkiAlloc}</p>}
                 </div>
               </div>
               <div>

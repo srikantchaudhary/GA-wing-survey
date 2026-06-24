@@ -43,7 +43,7 @@ export default function FormView({ form, state, customSections, onBack, editResp
   // Replace options for fields that source their list from reference data.
   const resolveField = (f) => {
     let resolved = f.optionsSource === "states" && states.length ? { ...f, options: states } : f;
-    if (f.id === "sub_date") {
+    if (f.id === "sub_date" || f.id === "sub_office") {
       resolved = { ...resolved, disabled: true };
     }
     return resolved;
@@ -53,10 +53,12 @@ export default function FormView({ form, state, customSections, onBack, editResp
     let cancelled = false;
     (async () => {
       try {
+        const agOffice = `AG ${state}`;
+
         // Force-new: skip all lookups, open a completely blank form
         if (forceNew) {
           if (!cancelled) {
-            setFormData({ sub_date: todayIso });
+            setFormData({ sub_date: todayIso, sub_office: agOffice });
             setLoading(false);
           }
           return;
@@ -69,6 +71,7 @@ export default function FormView({ form, state, customSections, onBack, editResp
             setFormData({
               ...editResponse.data,
               sub_date: editResponse.data?.sub_date || editResponse.submittedAt?.slice(0, 10) || todayIso,
+              sub_office: agOffice,
             });
             setHasExistingSubmission(true);
             setLoading(false);
@@ -86,13 +89,14 @@ export default function FormView({ form, state, customSections, onBack, editResp
           setFormData({
             ...existing.data,
             sub_date: existing.data?.sub_date || existing.submittedAt?.slice(0, 10) || todayIso,
+            sub_office: agOffice,
           });
           setHasExistingSubmission(true);
         } else if (savedDraft) {
-          setFormData({ ...savedDraft.data, sub_date: todayIso });
+          setFormData({ ...savedDraft.data, sub_date: todayIso, sub_office: agOffice });
           setDraftSavedAt(savedDraft.savedAt || null);
         } else {
-          setFormData({ sub_date: todayIso });
+          setFormData({ sub_date: todayIso, sub_office: agOffice });
         }
       } catch (err) {
         console.error(err);
@@ -135,10 +139,30 @@ export default function FormView({ form, state, customSections, onBack, editResp
 
   const validate = () => {
     const errs = {};
+
     requiredFields.forEach(f => {
       const v = formData[f.id];
-      if (!v || v === "" || (Array.isArray(v) && v.length === 0)) errs[f.id] = "Ye field required hai";
+      if (!v || v === "" || (Array.isArray(v) && v.length === 0)) errs[f.id] = "This field is required.";
     });
+
+    // Officer name — letters and spaces only, must not start with a space/digit/special char
+    const officerName = formData.sub_name || "";
+    if (officerName && !/^[a-zA-Z][a-zA-Z ]*$/.test(officerName)) {
+      errs.sub_name = "Name must start with a letter and contain only letters and spaces — no numbers or special characters.";
+    }
+
+    // Email — must match standard format with 2+ char TLD
+    const email = (formData.sub_email || "").trim();
+    if (email && !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      errs.sub_email = "Enter a valid email address (eg; officer@cag.gov.in).";
+    }
+
+    // Phone — exactly 10 digits, must start with 6–9 (Indian mobile)
+    const phoneDigits = (formData.sub_phone || "").replace(/^\+91[\s\-]?/, "").replace(/\D/g, "");
+    if (phoneDigits && (phoneDigits.length !== 10 || !/^[6-9]/.test(phoneDigits))) {
+      errs.sub_phone = "Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.";
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -294,8 +318,8 @@ export default function FormView({ form, state, customSections, onBack, editResp
             <button onClick={handleSubmit} className="flex-1 cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(24,95,165,0.25)]">Submit Form →</button>
           </div>
         ) : isExistingSubmission ? (
-          <div className="mb-10 flex gap-3">
-            <button onClick={handleSubmit} className="flex-1 cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(24,95,165,0.25)]">Update Form</button>
+          <div className="mb-10">
+            <button onClick={handleSubmit} className="w-full cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(24,95,165,0.25)]">Update Form</button>
           </div>
         ) : (
           <div className="mb-10">
@@ -304,7 +328,7 @@ export default function FormView({ form, state, customSections, onBack, editResp
         )}
       </div>
 
-      {showSuccess && <SubmitSuccessOverlay form={safeForm} state={state} onClose={() => setShowSuccess(false)} />}
+      {showSuccess && <SubmitSuccessOverlay form={safeForm} state={state} onClose={onBack} />}
     </div>
   );
 }

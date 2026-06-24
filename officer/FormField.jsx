@@ -13,8 +13,24 @@ export default function FormField({ field, value, onChange, error, disabled }) {
   const today = new Date().toISOString().split("T")[0];
 
   let input = null;
-  if (field.type === "text" || field.type === "email" || field.type === "tel") {
+  if (field.type === "text" || field.type === "email") {
     input = <input type={field.type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={field.placeholder} disabled={fieldDisabled} className={inputClass} />;
+  } else if (field.type === "tel") {
+    // Strip any +91 prefix stored from older data and show only digits
+    const digits = (value || "").replace(/^\+91[\s\-]?/, "").replace(/\D/g, "");
+    input = (
+      <div className={`flex items-center overflow-hidden rounded-lg border-[1.5px] ${error ? "border-ga-error" : "border-ga-line"} ${fieldDisabled ? "bg-ga-cream" : "bg-white"}`}>
+        <span className={`shrink-0 select-none border-r border-ga-line px-3 py-[9px] text-[13px] font-semibold text-ga-muted ${fieldDisabled ? "bg-ga-cream" : "bg-[#F7F5EF]"}`}>+91</span>
+        <input
+          type="tel"
+          value={digits}
+          onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); onChange(v); }}
+          placeholder={field.placeholder || "98765 43210"}
+          disabled={fieldDisabled}
+          className="flex-1 bg-transparent px-3 py-[9px] text-[13px] text-ga-ink outline-none"
+        />
+      </div>
+    );
   } else if (field.type === "number") {
     input = (
       <input

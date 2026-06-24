@@ -34,9 +34,9 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
     }
     await pool.query(
       `INSERT INTO custom_sections (id, payload, created_by, created_date, updated_by, updated_date)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_by = VALUES(updated_by), updated_date = VALUES(updated_date)`,
-      [section.id, JSON.stringify(section), req.user.id || null, new Date(), req.user.id || null, new Date()]
+       VALUES (?, ?, ?, NOW(), NULL, NULL)
+       ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_by = ?, updated_date = NOW()`,
+      [section.id, JSON.stringify(section), req.user.id || null, req.user.id || null]
     );
     const [rows] = await pool.query("SELECT * FROM custom_sections ORDER BY created_date ASC");
     res.json(rows.map(rowToSection));

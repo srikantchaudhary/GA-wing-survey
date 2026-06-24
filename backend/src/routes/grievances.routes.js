@@ -41,7 +41,7 @@ function rowToGrievance(row) {
     createdBy: row.created_by ? Number(row.created_by) : null,
     createdAt: new Date(row.created_date).toISOString(),
     updatedBy: row.updated_by ? Number(row.updated_by) : null,
-    updatedAt: new Date(row.updated_date).toISOString(),
+    updatedAt: row.updated_date ? new Date(row.updated_date).toISOString() : null,
   };
 }
 
@@ -59,16 +59,27 @@ router.get("/", authRequired, async (req, res) => {
   }
 });
 
-// GET /api/grievances/:id/view — stream file inline (no forced download)
+// GET /api/grievances/:id/view — stream file inline (admin sees all; officer sees own state only)
 router.get("/:id/view", authRequired, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT file_path, file_name, file_mime FROM grievances WHERE id = ?",
+      "SELECT file_path, file_name, file_mime, states FROM grievances WHERE id = ?",
       [req.params.id]
     );
     if (!rows.length || !rows[0].file_path) {
       return res.status(404).json({ error: "No file attached to this record." });
     }
+
+    // Officers can only access files from grievances addressed to their own state
+    if (req.user.role !== "admin") {
+      let statesArr = rows[0].states;
+      if (typeof statesArr === "string") { try { statesArr = JSON.parse(statesArr); } catch { statesArr = []; } }
+      const userState = (req.user.state || "").toLowerCase();
+      if (!Array.isArray(statesArr) || !statesArr.some(s => s.toLowerCase() === userState)) {
+        return res.status(403).json({ error: "Access denied." });
+      }
+    }
+
     const { file_path, file_name, file_mime } = rows[0];
     const fullPath = path.join(uploadsDir, file_path);
     if (!fs.existsSync(fullPath)) {
@@ -100,11 +111,11 @@ router.post("/", authRequired, requireRole("admin"), upload.single("file"), asyn
     const f = req.file;
     await pool.query(
       `INSERT INTO grievances (id, states, name, type, reason, file_name, file_path, file_mime, file_size, created_by, created_date, updated_by, updated_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL)`,
       [
         id, JSON.stringify(statesArr), name.trim(), type.trim(), reason.trim(),
         f?.originalname || null, f?.filename || null, f?.mimetype || null, f?.size || null,
-        req.user.id || null, req.user.id || null,
+        req.user.id || null,
       ]
     );
     const [rows] = await pool.query("SELECT * FROM grievances WHERE id = ?", [id]);

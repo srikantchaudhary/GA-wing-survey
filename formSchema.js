@@ -48,12 +48,12 @@ export const SECTION_FIELDS = {
 };
 
 export const SUBMISSION_FIELDS = [
-  { id: "sub_name",   label: "Officer Name",        type: "text",     placeholder: "eg; Rajesh Kumar",         required: true  },
-  { id: "sub_desig",  label: "Designation",         type: "text",     placeholder: "eg; Senior Audit Officer" },
-  { id: "sub_office", label: "Office / A&E Branch", type: "text",     placeholder: "eg; O/o AG (A&E), Punjab" },
-  { id: "sub_date",   label: "Date of Submission",  type: "date",     placeholder: "",                         required: true  },
-  { id: "sub_email",  label: "Email Address",       type: "email",    placeholder: "eg; officer@cag.gov.in" },
-  { id: "sub_phone",  label: "Phone / Extension",   type: "tel",      placeholder: "eg; +91 98765 43210" },
+  { id: "sub_name",   label: "Officer Name",        type: "text",     placeholder: "eg; Rajesh Kumar",       required: true  },
+  { id: "sub_desig",  label: "Designation",         type: "text",     placeholder: "eg; Senior Audit Officer", required: true },
+  { id: "sub_office", label: "Office / A&E Branch", type: "text",     placeholder: "",                        required: true  },
+  { id: "sub_date",   label: "Date of Submission",  type: "date",     placeholder: "",                        required: true  },
+  { id: "sub_email",  label: "Email Address",       type: "email",    placeholder: "eg; officer@cag.gov.in",  required: true  },
+  { id: "sub_phone",  label: "Phone / Extension",   type: "tel",      placeholder: "98765 43210",             required: true  },
   { id: "sub_rem",    label: "Additional Remarks",  type: "textarea", placeholder: "Any additional observations…" },
 ];
 
@@ -72,7 +72,7 @@ export function customSectionFields(section) {
       col.dataType === "dropdown" ? (col.dropdownOptions || []).filter(o => o.trim()) :
       col.dataType === "checkbox" ? (col.checkboxOptions || []).filter(o => o.trim()) :
       undefined,
-    required: false,
+    required: col.required === true,
   }));
 }
 

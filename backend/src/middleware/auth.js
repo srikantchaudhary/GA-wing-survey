@@ -1,5 +1,17 @@
 import jwt from "jsonwebtoken";
 
+// Block direct browser URL-bar navigation to API endpoints.
+// Browsers set Sec-Fetch-Mode: "navigate" on address-bar requests and
+// "cors" / "same-origin" on fetch() calls from the app.
+// Non-browser clients (Postman, curl, mobile apps) don't send this header
+// at all, so they are unaffected.
+export function apiOnly(req, res, next) {
+  if (req.headers["sec-fetch-mode"] === "navigate") {
+    return res.status(403).json({ ok: false, error: "Direct browser access to API endpoints is not allowed." });
+  }
+  next();
+}
+
 export function authRequired(req, res, next) {
   // Try to get token from cookie first, then fall back to Authorization header
   const token = req.cookies?.token || (req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : null);

@@ -73,6 +73,28 @@ export async function loginUser(email, password) {
   }
 }
 
+export async function forgotPassword(email) {
+  try {
+    return await api("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  } catch (err) {
+    return { ok: false, error: err.data?.error || err.message };
+  }
+}
+
+export async function resetPassword(email, otp, newPassword) {
+  try {
+    return await api("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, otp, newPassword }),
+    });
+  } catch (err) {
+    return { ok: false, error: err.data?.error || err.message };
+  }
+}
+
 export async function getCurrentUser() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -185,6 +207,31 @@ export async function updateResponse(id, data) {
 
 export async function duplicateResponseRecord(id) {
   return api(`/responses/${id}/duplicate`, { method: "POST" });
+}
+
+export async function finalizeForm(state, formId) {
+  return api("/responses/finalize", {
+    method: "POST",
+    body: JSON.stringify({ state, formId }),
+  });
+}
+
+export async function isFormFinalized(state, formId) {
+  const params = new URLSearchParams({ state, formId });
+  return api(`/responses/is-finalized?${params}`);
+}
+
+export async function getApprovedStates(formId) {
+  const params = new URLSearchParams({ formId });
+  return api(`/responses/approved-states?${params}`);
+}
+
+// responseIds: number[] — individual response record IDs to approve or reject
+export async function approveFormsBulk(responseIds, status = "approved") {
+  return api("/responses/approve-bulk", {
+    method: "POST",
+    body: JSON.stringify({ responseIds, status }),
+  });
 }
 
 // ══════════════════════════════════════════════════════════

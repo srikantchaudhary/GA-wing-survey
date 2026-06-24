@@ -1,12 +1,11 @@
 import { Router } from "express";
 import pool from "../config/db.js";
+import { authRequired } from "../middleware/auth.js";
 
 const router = Router();
 
-// Public reference data — designation list for nomination dropdowns.
-
 // GET /api/designations -> ["Divisional Accountant", ...]
-router.get("/", async (_req, res) => {
+router.get("/", authRequired, async (_req, res) => {
   try {
     const [rows] = await pool.query("SELECT name FROM designations ORDER BY sort_order ASC, id ASC");
     res.json(rows.map(r => r.name));

@@ -24,7 +24,7 @@ function rowToRecord(row) {
     createdBy: row.created_by ? Number(row.created_by) : null,
     createdAt: new Date(row.created_date).toISOString(),
     updatedBy: row.updated_by ? Number(row.updated_by) : null,
-    updatedAt: new Date(row.updated_date).toISOString(),
+    updatedAt: row.updated_date ? new Date(row.updated_date).toISOString() : null,
   };
 }
 
@@ -56,12 +56,12 @@ router.post("/", authRequired, requireStateAccess, async (req, res) => {
     await pool.query(
       `INSERT INTO mca_mki_records
          (id, state, mca_due_date, mca_allocation_date, mca_comment, mki_due_date, mki_allocation_date, mki_comment, created_by, created_date, updated_by, updated_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL)`,
       [
         id, state,
         toDate(mcaDue), toDate(mcaAlloc), (mcaComment || "").trim() || null,
         toDate(mkiDue), toDate(mkiAlloc), (mkiComment || "").trim() || null,
-        req.user.id || null, new Date(), req.user.id || null, new Date(),
+        req.user.id || null,
       ]
     );
     const [rows] = await pool.query("SELECT * FROM mca_mki_records WHERE id = ?", [id]);

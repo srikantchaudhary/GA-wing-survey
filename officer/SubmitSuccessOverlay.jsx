@@ -19,7 +19,7 @@ export default function SubmitSuccessOverlay({ form, state, onClose }) {
             <div><span className="text-ga-muted">Submitted:</span> {formatDateDdMmYyyy(new Date())}</div>
           </div>
         </div>
-        <button onClick={onClose} className="w-full cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white">Done ✓</button>
+        <button onClick={onClose} className="w-full cursor-pointer rounded-[10px] border-none bg-gradient-to-br from-ga-blue to-ga-green py-3 text-sm font-bold text-white">View Response →</button>
       </div>
     </div>
   );

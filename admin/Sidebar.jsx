@@ -30,7 +30,7 @@ const TAB_COUNT_ACTIVE = {
 export default function Sidebar({ forms, activeId, onSelect, onDelete }) {
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, name, formId }
 
   const tabMeta = {
     all:       { label: "All",       color: "#5F5E5A", bg: "#F1EFE8" },
@@ -52,20 +52,9 @@ export default function Sidebar({ forms, activeId, onSelect, onDelete }) {
     return matchTab && matchSearch;
   });
 
-  const handleDeleteClick = (e, id) => {
+  const handleDeleteClick = (e, form) => {
     e.stopPropagation();
-    setDeleteConfirm(id);
-  };
-
-  const handleDeleteConfirm = (e, id) => {
-    e.stopPropagation();
-    onDelete(id);
-    setDeleteConfirm(null);
-  };
-
-  const handleDeleteCancel = (e) => {
-    e.stopPropagation();
-    setDeleteConfirm(null);
+    setDeleteConfirm({ id: form.id, name: form.name, formId: form.formId });
   };
 
   return (
@@ -119,21 +108,6 @@ export default function Sidebar({ forms, activeId, onSelect, onDelete }) {
                   : "border border-transparent hover:bg-ga-cream"
               }`}
             >
-              {/* Delete confirm overlay */}
-              {deleteConfirm === f.id && (
-                <div
-                  onClick={e => e.stopPropagation()}
-                  className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-[9px] border-[1.5px] border-[#F1C0C0] bg-[#FEF0F0] p-2.5"
-                >
-                  <div className="text-center text-[11px] font-bold text-ga-error">Delete this form?</div>
-                  <div className="text-center text-[10px] text-ga-muted">This cannot be undone</div>
-                  <div className="flex gap-1.5">
-                    <button onClick={handleDeleteCancel} className="cursor-pointer rounded-md border border-ga-line bg-ga-surface px-3 py-[5px] text-[11px] font-semibold text-ga-body">Cancel</button>
-                    <button onClick={e => handleDeleteConfirm(e, f.id)} className="cursor-pointer rounded-md border-none bg-ga-error px-3 py-[5px] text-[11px] font-bold text-white">Delete</button>
-                  </div>
-                </div>
-              )}
-
               <div className="flex items-start justify-between gap-1.5">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-semibold leading-snug text-ga-ink">{f.name}</div>
@@ -151,7 +125,7 @@ export default function Sidebar({ forms, activeId, onSelect, onDelete }) {
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      if (canDelete) handleDeleteClick(e, f.id);
+                      if (canDelete) handleDeleteClick(e, f);
                     }}
                     disabled={!canDelete}
                     title={canDelete ? "Delete form" : "Published forms cannot be deleted"}
@@ -190,6 +164,58 @@ export default function Sidebar({ forms, activeId, onSelect, onDelete }) {
           ))}
         </div>
       </div>
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50"
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            className="w-[460px] max-w-[92vw] overflow-hidden rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.22)]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center gap-3.5 border-b border-ga-surface bg-[#FEF0F0] px-6 py-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FCEBEB] text-[22px]">🗑</div>
+              <div>
+                <div className="text-[16px] font-bold text-ga-error">Delete Form</div>
+                <div className="text-[11px] text-ga-muted">This action is permanent and cannot be undone</div>
+              </div>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-6 py-5">
+              {/* Form name card */}
+              <div className="mb-4 rounded-[10px] border border-[#F1C0C0] bg-[#FEF8F8] px-4 py-3.5">
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-ga-muted">Form Selected for Deletion</div>
+                <div className="text-[15px] font-bold leading-snug text-ga-ink">{deleteConfirm.name}</div>
+                <div className="mt-0.5 text-[11px] text-ga-muted">{deleteConfirm.formId}</div>
+              </div>
+
+              <p className="text-[13px] leading-relaxed text-ga-body">
+                You are about to permanently delete <span className="font-bold text-ga-ink">"{deleteConfirm.name}"</span>.
+                All sections, fields, and configuration for this form will be removed and <span className="font-semibold text-ga-error">cannot be recovered</span>.
+              </p>
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex gap-2.5 border-t border-ga-surface px-6 py-4">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 cursor-pointer rounded-lg border border-ga-line bg-ga-surface py-2.5 text-[13px] font-semibold text-ga-body transition-colors duration-100 hover:bg-ga-cream"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { onDelete(deleteConfirm.id); setDeleteConfirm(null); }}
+                className="flex-1 cursor-pointer rounded-lg border-none bg-ga-error py-2.5 text-[13px] font-bold text-white transition-opacity duration-100 hover:opacity-90"
+              >
+                Yes, Delete Form
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

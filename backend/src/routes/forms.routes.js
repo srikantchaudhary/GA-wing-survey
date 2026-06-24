@@ -16,11 +16,12 @@ async function fetchAllForms() {
 }
 
 async function fetchFormsForState(state) {
-  // Officers can see forms that are either:
-  // 1. Assigned to their state (in the states array), OR
-  // 2. Published with no state restrictions (states is NULL or empty array)
+  // Officers only see PUBLISHED forms assigned to their state or globally published
   const [rows] = await pool.query(
-    "SELECT * FROM forms WHERE JSON_CONTAINS(states, ?) OR (status = 'published' AND (states IS NULL OR JSON_LENGTH(states) = 0)) ORDER BY updated_date DESC",
+    `SELECT * FROM forms
+     WHERE status = 'published'
+       AND (JSON_CONTAINS(states, ?) OR states IS NULL OR JSON_LENGTH(states) = 0)
+     ORDER BY updated_date DESC`,
     [JSON.stringify(state)]
   );
   return rows.map(rowToForm);
@@ -43,7 +44,7 @@ router.get("/", authRequired, async (req, res) => {
   }
 });
 
-// POST /api/forms - Admin only
+// POST /api/forms - Admin only — returns the saved form only
 router.post("/", authRequired, requireRole("admin"), async (req, res) => {
   try {
     const form = req.body;
@@ -53,8 +54,8 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
 
     const row = formToRow(form);
     await pool.query(
-      `INSERT INTO forms (id, form_id, name, sections, states, status, survey_year, description, created_by, created_date, updated_by, updated_date, saved_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO forms (id, form_id, name, sections, states, status, survey_year, description, created_by, created_date, updated_by, updated_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL)
        ON DUPLICATE KEY UPDATE
          form_id = VALUES(form_id),
          name = VALUES(name),
@@ -63,9 +64,8 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
          status = VALUES(status),
          survey_year = VALUES(survey_year),
          description = VALUES(description),
-         updated_by = VALUES(updated_by),
-         updated_date = VALUES(updated_date),
-         saved_at = VALUES(saved_at)`,
+         updated_by = ?,
+         updated_date = NOW()`,
       [
         row.id,
         row.form_id,
@@ -76,22 +76,19 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
         row.survey_year,
         row.description,
         req.user.id || null,
-        row.created_date,
         req.user.id || null,
-        row.updated_date,
-        row.updated_date,
       ]
     );
 
-    const forms = await fetchAllForms();
-    res.json(forms);
+    const [rows] = await pool.query("SELECT * FROM forms WHERE id = ?", [row.id]);
+    res.status(201).json(rowToForm(rows[0]));
   } catch (err) {
     console.error("POST /forms", err);
     res.status(500).json({ error: "Failed to save form." });
   }
 });
 
-// DELETE /api/forms/:id - Admin only
+// DELETE /api/forms/:id - Admin only — returns { ok, id }
 router.delete("/:id", authRequired, requireRole("admin"), async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -103,15 +100,14 @@ router.delete("/:id", authRequired, requireRole("admin"), async (req, res) => {
       return res.status(400).json({ error: "Published forms cannot be deleted." });
     }
     await pool.query("DELETE FROM forms WHERE id = ?", [id]);
-    const forms = await fetchAllForms();
-    res.json(forms);
+    res.json({ ok: true, id });
   } catch (err) {
     console.error("DELETE /forms/:id", err);
     res.status(500).json({ error: "Failed to delete form." });
   }
 });
 
-// PATCH /api/forms/:id/publish - Admin only
+// PATCH /api/forms/:id/publish - Admin only — returns the updated form only
 router.patch("/:id/publish", authRequired, requireRole("admin"), async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -121,8 +117,8 @@ router.patch("/:id/publish", authRequired, requireRole("admin"), async (req, res
       `UPDATE forms SET status = 'published', states = ?, updated_by = ?, updated_date = ? WHERE id = ?`,
       [JSON.stringify(states), req.user.id || null, savedAt, id]
     );
-    const forms = await fetchAllForms();
-    res.json(forms);
+    const [rows] = await pool.query("SELECT * FROM forms WHERE id = ?", [id]);
+    res.json(rowToForm(rows[0]));
   } catch (err) {
     console.error("PATCH /forms/:id/publish", err);
     res.status(500).json({ error: "Failed to publish form." });

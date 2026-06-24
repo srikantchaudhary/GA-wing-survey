@@ -46,7 +46,6 @@ const PencilIcon = () => (
   </svg>
 );
 
-
 // ─── detail modal ─────────────────────────────────────────────────────────────
 
 function DetailModal({ response, sections, onClose }) {
@@ -88,7 +87,6 @@ function DetailModal({ response, sections, onClose }) {
 
         {/* Body */}
         <div className="px-6 py-5 flex flex-col gap-5">
-          {/* Submission details */}
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-[#888780] mb-3 pb-1 border-b border-[#E8E6DF]">
               Submission Details
@@ -105,7 +103,6 @@ function DetailModal({ response, sections, onClose }) {
             </div>
           </div>
 
-          {/* Section fields */}
           {sections.map(section => (
             <div key={section.id}>
               <div
@@ -145,29 +142,27 @@ function DetailModal({ response, sections, onClose }) {
 
 export default function FormReport({ form, state, customSections, onBack, onAdd, onAddNew }) {
   const [responses, setResponses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [viewRow, setViewRow] = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [viewRow, setViewRow]     = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    (async () => {
-      try {
-        const all = await getAllResponsesByStateAndForm(state, form.formId);
-        if (!cancelled) setResponses(Array.isArray(all) ? all : []);
-      } catch {
-        if (!cancelled) setResponses([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    getAllResponsesByStateAndForm(state, form.formId)
+      .then(all => { if (!cancelled) setResponses(Array.isArray(all) ? all : []); })
+      .catch(() => { if (!cancelled) setResponses([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [state, form.formId]);
+
+  // Derived approval state from individual records
+  const hasApproved = responses.some(r => r.approvalStatus === "approved");
+  const hasRejected = responses.some(r => r.approvalStatus === "rejected");
+  const allApproved = responses.length > 0 && responses.every(r => r.approvalStatus === "approved");
 
   const allSections = getFormSections(form, customSections || []);
   const hasAny = responses.length > 0;
 
-  // Flat list of section field columns (with section metadata for coloring)
   const sectionCols = allSections.flatMap(section =>
     (section.fields || []).map(field => ({
       ...field,
@@ -197,7 +192,19 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
           </button>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-serif text-xl font-extrabold text-ga-ink">{form.name}</h1>
-            {hasAny ? (
+            {allApproved ? (
+              <span className="rounded-full bg-[#E1F5EE] px-[9px] py-0.5 text-[10px] font-bold text-ga-green">
+                ✅ All Approved
+              </span>
+            ) : hasApproved ? (
+              <span className="rounded-full bg-[#E6F1FB] px-[9px] py-0.5 text-[10px] font-bold text-[#185FA5]">
+                ✅ Partially Approved
+              </span>
+            ) : hasRejected ? (
+              <span className="rounded-full bg-[#FEE8E8] px-[9px] py-0.5 text-[10px] font-bold text-[#A32D2D]">
+                ❌ Rejected by Admin
+              </span>
+            ) : hasAny ? (
               <span className="rounded-full bg-[#E1F5EE] px-[9px] py-0.5 text-[10px] font-bold text-ga-green">
                 ✓ Submitted
               </span>
@@ -223,7 +230,37 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
             + Add Response
           </button>
         )}
+
       </div>
+
+      {/* Banners — based on aggregate record-level approval status */}
+      {allApproved && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-[#9FE1CB] bg-[#E1F5EE] px-5 py-4">
+          <span className="text-xl shrink-0">✅</span>
+          <div>
+            <div className="text-[13px] font-bold text-ga-green">All records have been approved by the Admin</div>
+            <div className="text-[12px] text-ga-green mt-0.5 opacity-80">No further edits are allowed on approved records.</div>
+          </div>
+        </div>
+      )}
+      {!allApproved && hasApproved && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-[#9FE1CB] bg-[#E1F5EE] px-5 py-4">
+          <span className="text-xl shrink-0">✅</span>
+          <div>
+            <div className="text-[13px] font-bold text-ga-green">Some records have been approved by the Admin</div>
+            <div className="text-[12px] text-ga-green mt-0.5 opacity-80">Approved records are locked. Pending or rejected records can still be edited.</div>
+          </div>
+        </div>
+      )}
+      {hasRejected && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-[#F5B8B8] bg-[#FEF2F2] px-5 py-4">
+          <span className="text-xl shrink-0">❌</span>
+          <div>
+            <div className="text-[13px] font-bold text-[#A32D2D]">Some records have been rejected by the Admin</div>
+            <div className="text-[12px] text-[#A32D2D] mt-0.5 opacity-80">Please review and update the rejected records, then resubmit.</div>
+          </div>
+        </div>
+      )}
 
       {/* Empty state */}
       {!hasAny ? (
@@ -235,15 +272,9 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
           <div className="px-6 py-16 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-ga-cream text-3xl">📋</div>
             <p className="mb-1 text-[14px] font-semibold text-ga-ink">No submission yet</p>
-            <p className="mb-6 text-[13px] text-ga-muted">
-              Click "Add Response" to open the form and submit your data.
+            <p className="text-[13px] text-ga-muted">
+              Click "+ Add Response" at the top right to open the form and submit your data.
             </p>
-            <button
-              onClick={() => onAdd(null)}
-              className="cursor-pointer rounded-lg bg-ga-blue px-6 py-2.5 text-[13px] font-bold text-white hover:opacity-90 transition-opacity border-none"
-            >
-              + Add Response
-            </button>
           </div>
         </div>
       ) : (
@@ -256,6 +287,8 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
               <span className="text-[11px] text-[#888780]">
                 {responses.length} record{responses.length !== 1 ? "s" : ""}
               </span>
+
+              {/* Add New Record — always visible; officer can always add new records */}
               <button
                 onClick={() => onAddNew?.()}
                 className="cursor-pointer flex items-center gap-1.5 rounded-lg bg-[#185FA5] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#154e8a] transition-colors border-none"
@@ -275,12 +308,14 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#888780] whitespace-nowrap">
                     Actions
                   </th>
-                  {/* Fixed columns */}
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#888780] whitespace-nowrap w-10">
                     #
                   </th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#888780] whitespace-nowrap">
                     State
+                  </th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#888780] whitespace-nowrap">
+                    Status
                   </th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#888780] whitespace-nowrap">
                     Submitted On
@@ -293,8 +328,6 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
                       {col.label}
                     </th>
                   ))}
-
-                  {/* Section columns — colored by section */}
                   {sectionCols.map(col => (
                     <th
                       key={col.id}
@@ -316,13 +349,21 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
                     {/* Actions — first column */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => onAdd(resp)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-[#E6F1FB] px-2.5 py-1.5 text-[11px] font-semibold text-[#185FA5] hover:bg-[#d4e8f8] transition-colors cursor-pointer border-none whitespace-nowrap"
-                        >
-                          <PencilIcon />
-                          Edit
-                        </button>
+                        {/* Edit disabled only when THIS record is approved */}
+                        {resp.approvalStatus === "approved" ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#F1EFE8] px-2.5 py-1.5 text-[11px] font-semibold text-[#B4B2A9] cursor-not-allowed whitespace-nowrap select-none" title="Approved — cannot edit">
+                            <PencilIcon />
+                            Edit
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => onAdd(resp)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-[#E6F1FB] px-2.5 py-1.5 text-[11px] font-semibold text-[#185FA5] hover:bg-[#d4e8f8] transition-colors cursor-pointer border-none whitespace-nowrap"
+                          >
+                            <PencilIcon />
+                            Edit
+                          </button>
+                        )}
                         <button
                           onClick={() => setViewRow(resp)}
                           className="inline-flex items-center gap-1 rounded-lg bg-white border border-[#DDD9D0] px-2.5 py-1.5 text-[11px] font-semibold text-[#5F5E5A] hover:bg-[#F7F5EF] transition-colors cursor-pointer border-solid whitespace-nowrap"
@@ -340,6 +381,19 @@ export default function FormReport({ form, state, customSections, onBack, onAdd,
                       <span className="inline-block rounded-full bg-[#E6F1FB] px-2.5 py-0.5 text-[10px] font-semibold text-[#185FA5]">
                         {resp.state || "—"}
                       </span>
+                    </td>
+
+                    {/* Per-record approval badge */}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      {resp.approvalStatus === "approved" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F5EE] px-2.5 py-0.5 text-[10px] font-bold text-[#0F6E56]">✅ Approved</span>
+                      )}
+                      {resp.approvalStatus === "rejected" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FEE8E8] px-2.5 py-0.5 text-[10px] font-bold text-[#A32D2D]">❌ Rejected</span>
+                      )}
+                      {(resp.approvalStatus === "pending" || !resp.approvalStatus) && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FAEEDA] px-2.5 py-0.5 text-[10px] font-bold text-[#854F0B]">⏳ Pending</span>
+                      )}
                     </td>
 
                     {/* Submitted On */}

@@ -60,7 +60,7 @@ export default function StaticReportView({ state, onLogout }) {
             "Designation": n.designation || "—",
             "State": n.state || "—",
             "Category": n.category || "—",
-            "Submitted At": n.submitted_at ? new Date(n.submitted_at).toLocaleDateString("en-IN") : "—",
+            "Submitted At": n.created_date ? new Date(n.created_date).toLocaleDateString("en-IN") : "—",
           }))
         : [{ "S.No": "—", "Name": "No data", "Designation": "", "State": "", "Category": "", "Submitted At": "" }];
       const nomSheet = XLSX.utils.json_to_sheet(nomRows);
@@ -74,7 +74,7 @@ export default function StaticReportView({ state, onLogout }) {
             "Type": r.type || "—",
             "State": r.state || "—",
             "Details": r.details || "—",
-            "Submitted At": r.submitted_at ? new Date(r.submitted_at).toLocaleDateString("en-IN") : "—",
+            "Submitted At": r.created_date ? new Date(r.created_date).toLocaleDateString("en-IN") : "—",
           }))
         : [{ "S.No": "—", "Name": "No data", "Type": "", "State": "", "Details": "", "Submitted At": "" }];
       const mcaSheet = XLSX.utils.json_to_sheet(mcaRows);
@@ -122,7 +122,7 @@ export default function StaticReportView({ state, onLogout }) {
               n.designation || "—",
               n.state || "—",
               n.category || "—",
-              n.submitted_at ? new Date(n.submitted_at).toLocaleDateString("en-IN") : "—",
+              n.created_date ? new Date(n.created_date).toLocaleDateString("en-IN") : "—",
             ])
           : [["—", "No data", "", "", "", ""]],
         styles: { fontSize: 9, cellPadding: 3 },
@@ -146,7 +146,7 @@ export default function StaticReportView({ state, onLogout }) {
               r.type || "—",
               r.state || "—",
               r.details || "—",
-              r.submitted_at ? new Date(r.submitted_at).toLocaleDateString("en-IN") : "—",
+              r.created_date ? new Date(r.created_date).toLocaleDateString("en-IN") : "—",
             ])
           : [["—", "No data", "", "", "", ""]],
         styles: { fontSize: 9, cellPadding: 3 },

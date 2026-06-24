@@ -1,0 +1,449 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>GAMIS URS</title>
+<!--[if gte mso 9]>
+<xml>
+  <w:WordDocument>
+    <w:View>Print</w:View>
+    <w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+  </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page { margin: 1in 1.1in 1in 1.1in; }
+  body { font-family: Calibri, sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.5; }
+  h1 { font-size: 20pt; font-weight: bold; color: #185FA5; margin-bottom: 4pt; }
+  h2 { font-size: 13pt; font-weight: bold; color: #185FA5; border-bottom: 1.5pt solid #185FA5; padding-bottom: 3pt; margin-top: 18pt; margin-bottom: 8pt; }
+  h3 { font-size: 11pt; font-weight: bold; color: #2C2C2A; margin-top: 10pt; margin-bottom: 4pt; }
+  p  { font-size: 11pt; margin-top: 4pt; margin-bottom: 6pt; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 12pt; font-size: 10pt; }
+  th { background-color: #185FA5; color: #ffffff; padding: 6pt 8pt; text-align: left; font-size: 10pt; font-weight: bold; border: 1pt solid #185FA5; }
+  td { padding: 5pt 8pt; border: 1pt solid #d0d0d0; vertical-align: top; }
+  tr:nth-child(even) td { background-color: #f2f6fb; }
+  .cover-box { border: 2pt solid #185FA5; padding: 18pt 24pt; margin-bottom: 24pt; }
+  .cover-label { font-size: 9pt; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cover-value { font-size: 11pt; font-weight: bold; color: #1a1a1a; }
+  .req-id { font-weight: bold; color: #185FA5; white-space: nowrap; }
+  .note { font-size: 9pt; color: #555; font-style: italic; }
+  .section-num { color: #185FA5; }
+  ul { margin: 4pt 0 6pt 16pt; padding: 0; }
+  li { font-size: 10.5pt; margin-bottom: 2pt; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ COVER ═══════════════════════════════ -->
+
+<div style="text-align:center; margin-bottom:10pt;">
+  <div style="display:inline-block; background:#185FA5; color:#fff; font-family:serif; font-size:22pt; font-weight:900; width:60pt; height:60pt; line-height:60pt; border-radius:10pt; text-align:center;">GA</div>
+</div>
+
+<div style="text-align:center; margin-bottom:24pt;">
+  <h1 style="text-align:center; margin-bottom:4pt;">User Requirement Specification</h1>
+  <p style="font-size:13pt; color:#0F6E56; font-weight:bold; margin:0;">GAMIS — GA Wing Management Information System</p>
+  <p style="font-size:10pt; color:#888; margin-top:4pt;">Office of the Controller General of Accounts &nbsp;·&nbsp; Ministry of Finance</p>
+</div>
+
+<div class="cover-box">
+  <table style="border:none; margin:0;">
+    <tr>
+      <td style="border:none; width:25%;"><span class="cover-label">Document Type</span><br><span class="cover-value">User Requirement Specification (URS)</span></td>
+      <td style="border:none; width:25%;"><span class="cover-label">Version</span><br><span class="cover-value">1.0</span></td>
+      <td style="border:none; width:25%;"><span class="cover-label">Date</span><br><span class="cover-value">June 2026</span></td>
+      <td style="border:none; width:25%;"><span class="cover-label">Status</span><br><span class="cover-value">Final</span></td>
+    </tr>
+    <tr>
+      <td style="border:none;" colspan="2"><span class="cover-label">Project</span><br><span class="cover-value">IT Systems Access Survey Portal</span></td>
+      <td style="border:none;" colspan="2"><span class="cover-label">Prepared By</span><br><span class="cover-value">Development Team, GA Wing</span></td>
+    </tr>
+  </table>
+</div>
+
+<div style="page-break-after:always;"></div>
+
+<!-- ═══════════════════════════════ 1. INTRODUCTION ═══════════════════════════════ -->
+
+<h2>1. Introduction</h2>
+
+<p>GAMIS is a web-based portal for the GA Wing of the Controller General of Accounts (CGA), Ministry of Finance, to collect and manage IT Systems Access Survey data from Accountant General (AG) offices across all Indian states and Union Territories. It replaces manual spreadsheet-based data collection with a structured, role-controlled digital workflow.</p>
+
+<h3>1.1 Purpose of this Document</h3>
+<p>This URS defines what the GAMIS system shall do from the perspective of its users. It forms the basis for design, development, testing, and acceptance.</p>
+
+<h3>1.2 Scope</h3>
+<table>
+  <tr><th>In Scope</th><th>Out of Scope</th></tr>
+  <tr><td>User authentication and access control</td><td>Direct integration with IFMIS / e-HRMS / WAMIS portals</td></tr>
+  <tr><td>Dynamic survey form creation and publishing</td><td>SMS notifications</td></tr>
+  <tr><td>Form filling and submission by state officers</td><td>Mobile application</td></tr>
+  <tr><td>Record-level approval and rejection workflow</td><td>Offline form filling</td></tr>
+  <tr><td>Analytics, reporting, and data export</td><td>Automated report delivery via email</td></tr>
+  <tr><td>DA Nominations and MCA/MKI records management</td><td></td></tr>
+  <tr><td>Grievance management with file attachments</td><td></td></tr>
+</table>
+
+<!-- ═══════════════════════════════ 2. SYSTEM OVERVIEW ═══════════════════════════════ -->
+
+<h2>2. System Overview</h2>
+
+<table>
+  <tr><th>Component</th><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>Frontend</td><td>React 19, Vite, Tailwind CSS</td><td>Admin and Officer portals (SPA)</td></tr>
+  <tr><td>Backend</td><td>Node.js, Express.js 5</td><td>REST API server on port 3001</td></tr>
+  <tr><td>Database</td><td>MySQL 8.0</td><td>Persistent storage for all data</td></tr>
+  <tr><td>Authentication</td><td>JWT in HttpOnly cookie</td><td>Secure session management (24 hr)</td></tr>
+  <tr><td>Email</td><td>Nodemailer / Gmail SMTP</td><td>OTP delivery for password reset</td></tr>
+  <tr><td>File Handling</td><td>Multer</td><td>Grievance file uploads</td></tr>
+  <tr><td>Export</td><td>XLSX, jsPDF</td><td>Excel and PDF report generation</td></tr>
+</table>
+
+<!-- ═══════════════════════════════ 3. USER ROLES ═══════════════════════════════ -->
+
+<h2>3. User Roles</h2>
+
+<table>
+  <tr><th>Role</th><th>Who</th><th>Access Level</th><th>Primary Responsibilities</th></tr>
+  <tr>
+    <td><strong>Admin</strong></td>
+    <td>CGA / GA Wing HQ officers</td>
+    <td>Full access — all states, all forms, all data</td>
+    <td>Create and publish forms; review and approve responses; manage grievances and static data; view analytics</td>
+  </tr>
+  <tr>
+    <td><strong>Officer</strong></td>
+    <td>AG Office officers (state-level)</td>
+    <td>Restricted to own assigned state only</td>
+    <td>Fill and submit survey forms; manage DA nominations and MCA/MKI records; view grievances for their state</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════ 4. FUNCTIONAL REQUIREMENTS ═══════════════════════════════ -->
+
+<h2>4. Functional Requirements</h2>
+
+<!-- 4.1 AUTH -->
+<h3>4.1 Authentication and User Management</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-AUTH-01</td>
+    <td>User Registration</td>
+    <td>New users register with name, email, password (min 6 chars), role (Admin / Officer), and state (mandatory for Officers). Email must be unique.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-AUTH-02</td>
+    <td>User Login</td>
+    <td>Login with email and password. On success, a JWT is stored in an HttpOnly cookie (24-hour expiry) and the user is redirected to their role portal. Incorrect credentials show a generic error (no email enumeration).</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-AUTH-03</td>
+    <td>Forgot Password via OTP</td>
+    <td>User enters registered email → system sends a 6-digit OTP to that email (valid 15 min). OTP is never shown on screen. User enters OTP and new password to reset. Failed or expired OTPs are rejected.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-AUTH-04</td>
+    <td>Role-Based Routing</td>
+    <td>Admins are directed to <code>/admin</code>. Officers are directed to <code>/officer/:state</code>. Officers without a state assigned are redirected to login.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-AUTH-05</td>
+    <td>Logout</td>
+    <td>Logout clears the JWT cookie and synchronises session state across browser tabs.</td>
+  </tr>
+</table>
+
+<!-- 4.2 FORMS -->
+<h3>4.2 Admin — Dynamic Form Management</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-FORM-01</td>
+    <td>Create Survey Form</td>
+    <td>Admin creates a form with: name, survey year, description (optional), one or more standard sections (IFMIS, e-HRMS, WAMIS, e-Voucher), optional custom sections, and state assignment. A unique Form ID is auto-generated.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-FORM-02</td>
+    <td>Standard Survey Sections</td>
+    <td>
+      Four built-in sections with predefined fields:<br>
+      <ul>
+        <li><strong>IFMIS (Annexure I)</strong> — State, Access Available, Remarks, Audit Action</li>
+        <li><strong>e-HRMS (Annexure III)</strong> — Implemented, Access Level, Remarks, Audit Action</li>
+        <li><strong>WAMIS (Annexure IV)</strong> — Status, A&amp;E Access, Nature of Data</li>
+        <li><strong>e-Voucher (Annexure V)</strong> — Voucher Status, Type, System/Portal, DSC Status, DSC Remarks</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-FORM-03</td>
+    <td>Custom Section Wizard</td>
+    <td>Admin creates custom sections in a 3-step wizard: (1) section name and colour, (2) number of columns, (3) column details — each column has a name, data type (Text/Number/Date/Dropdown/Checkbox), and a Required toggle. Required fields show * in officer view.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-FORM-04</td>
+    <td>Form Workflow States</td>
+    <td>Forms progress through: <strong>Draft → Review → Published</strong>. Only Draft and Review forms can be deleted. Published forms cannot be deleted.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-FORM-05</td>
+    <td>Delete Confirmation Modal</td>
+    <td>Deleting a Draft/Review form opens a full-screen modal showing the form name (twice), form ID, and an irreversibility warning. Officer must click "Yes, Delete Form" to confirm. Published forms show the delete button as disabled.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-FORM-06</td>
+    <td>Publish to States</td>
+    <td>Admin publishes a form to one or more states using a multi-state selector with inline keyword search. Once published, the form becomes visible to officers of assigned states.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-FORM-07</td>
+    <td>Form Sidebar</td>
+    <td>Left sidebar lists all forms with keyword search, filter tabs (All / Draft / Review / Published), count badges, status indicators, and delete buttons.</td>
+  </tr>
+</table>
+
+<!-- 4.3 APPROVAL -->
+<h3>4.3 Admin — Response Review and Approval</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-RESP-01</td>
+    <td>View Responses</td>
+    <td>Admin views all submitted responses for a form. Filters: state (searchable dropdown) and approval status (All / Pending / Approved / Rejected). Summary badge counts are shown at the top.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-RESP-02</td>
+    <td>Record-Level Approval</td>
+    <td>Admin selects one or more response records via checkboxes and clicks Approve or Reject. Status updates immediately in the UI without a full page reload.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-RESP-03</td>
+    <td>Status Badges</td>
+    <td>Each record shows: ⏳ Pending (amber), ✅ Approved (green), ❌ Rejected (red).</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-RESP-04</td>
+    <td>Approved Record Lock</td>
+    <td>An approved record cannot be edited by the officer. Rejected records remain editable.</td>
+  </tr>
+</table>
+
+<!-- 4.4 DASHBOARD -->
+<h3>4.4 Admin — Dashboard and Export</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-DASH-01</td>
+    <td>Analytics Dashboard</td>
+    <td>Shows total forms, total responses, state-wise submission status, and per-form submission counts.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-DASH-02</td>
+    <td>Data Export</td>
+    <td>Admin can export response data to Excel (XLSX) and PDF formats.</td>
+  </tr>
+</table>
+
+<!-- 4.5 STATIC FORMS -->
+<h3>4.5 Admin — Static Forms Management</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-STAT-01</td>
+    <td>DA Cadre Nominations</td>
+    <td>Admin can create, edit, and delete DA Cadre nomination records (employee name, designation, email, mobile, state).</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-STAT-02</td>
+    <td>MCA / MKI Records</td>
+    <td>Admin can create, edit, and delete MCA (Monthly Close of Accounts) and MKI (Monthly Key Indicators) date records per state (due date, allocation date, comments).</td>
+  </tr>
+</table>
+
+<!-- 4.6 GRIEVANCES -->
+<h3>4.6 Grievance Management</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-GRIEV-01</td>
+    <td>Create Grievance</td>
+    <td>Admin creates grievances with: title, type, reason, state(s) assignment, and optional file attachment.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-GRIEV-02</td>
+    <td>Edit and Delete</td>
+    <td>Admin can edit all grievance fields (including replacing the attachment) and can delete a grievance.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-GRIEV-03</td>
+    <td>Officer View</td>
+    <td>Officers can view grievances assigned to their state only. Officers cannot create or delete grievances.</td>
+  </tr>
+</table>
+
+<!-- 4.7 OFFICER FORMS -->
+<h3>4.7 Officer — Form Submission</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-OFF-01</td>
+    <td>Form List View</td>
+    <td>Officer sees Pending Forms (not yet submitted) and Submitted Forms (already submitted, shown in right sidebar).</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-02</td>
+    <td>Form Navigation Panel</td>
+    <td>Left panel inside the form shows: form name, overall fill progress (%), required fields count, section jump links, and draft save timestamp.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-03</td>
+    <td>Supported Field Types</td>
+    <td>Text, Number, Date, Email, Phone (+91 fixed prefix), Dropdown, Radio, Checkbox, Textarea (1000 char limit).</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-04</td>
+    <td>Required Fields</td>
+    <td>Required fields show a red asterisk (*) next to the label. Submission is blocked if any required field is empty, with an inline error shown below the field.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-05</td>
+    <td>Field Validation</td>
+    <td>
+      <ul>
+        <li><strong>Officer Name:</strong> Letters and spaces only; must start with a letter; no digits or special characters.</li>
+        <li><strong>Email:</strong> Must match <em>user@domain.tld</em> format with 2+ character TLD.</li>
+        <li><strong>Phone:</strong> Exactly 10 digits; must start with 6–9 (Indian mobile); +91 prefix is fixed and non-editable.</li>
+        <li><strong>Office/Branch:</strong> Auto-filled as "AG {State}"; non-editable.</li>
+        <li><strong>Submission Date:</strong> Fixed to today's date; non-editable.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-06</td>
+    <td>Draft Auto-Save</td>
+    <td>Form data is auto-saved as a draft 1.5 seconds after the officer stops typing. Drafts persist in the database until the form is submitted.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-07</td>
+    <td>Form Submission</td>
+    <td>On submit: validations run → response saved with Pending status → success overlay shown with submission receipt → clicking "View Response →" redirects to the Form Response page.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-08</td>
+    <td>Form Response Page</td>
+    <td>Shows a table of all submitted records with columns for state, officer name, submission date, per-record status badge, Edit button (disabled if Approved), and View button (opens detail modal). Status banners indicate overall approval state.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-09</td>
+    <td>Multiple Records</td>
+    <td>Officers can add more than one response record per form using the "+ Add Response" button in the page header.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-OFF-10</td>
+    <td>Edit Record</td>
+    <td>Officers can edit a submitted record as long as it has not been approved by admin.</td>
+  </tr>
+</table>
+
+<!-- 4.8 OFFICER STATIC -->
+<h3>4.8 Officer — Static Data Entry</h3>
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:30%;">Requirement</th><th>Details</th></tr>
+  <tr>
+    <td class="req-id">REQ-STAT-OFF-01</td>
+    <td>DA Nominations</td>
+    <td>Officers can create and manage DA Cadre nomination entries for their assigned state.</td>
+  </tr>
+  <tr>
+    <td class="req-id">REQ-STAT-OFF-02</td>
+    <td>MCA / MKI Records</td>
+    <td>Officers can create and manage MCA/MKI date records for their assigned state.</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════ 5. NON-FUNCTIONAL ═══════════════════════════════ -->
+
+<h2>5. Non-Functional Requirements</h2>
+
+<table>
+  <tr><th style="width:14%;">Req ID</th><th style="width:20%;">Category</th><th>Requirement</th></tr>
+  <tr><td class="req-id">NFR-01</td><td>Performance</td><td>Page load time shall be under 3 seconds on standard broadband. Response list shall load within 3 seconds for up to 500 records.</td></tr>
+  <tr><td class="req-id">NFR-02</td><td>Performance</td><td>Draft auto-save shall complete within 2 seconds of triggering. The system shall support at least 50 concurrent sessions.</td></tr>
+  <tr><td class="req-id">NFR-03</td><td>Usability</td><td>Validation errors shall appear inline immediately on a failed submission attempt. Colour coding: blue = neutral, green = approved/success, amber = pending/draft, red = error/rejected.</td></tr>
+  <tr><td class="req-id">NFR-04</td><td>Usability</td><td>All destructive actions (delete form, delete record) shall require a named confirmation modal. Toast notifications shall appear for all major actions.</td></tr>
+  <tr><td class="req-id">NFR-05</td><td>Usability</td><td>The system shall work correctly in current versions of Chrome, Firefox, and Microsoft Edge.</td></tr>
+  <tr><td class="req-id">NFR-06</td><td>Reliability</td><td>Draft data shall be stored in the database — no data loss on browser close or accidental navigation away from the form.</td></tr>
+  <tr><td class="req-id">NFR-07</td><td>Reliability</td><td>If email delivery fails for OTP, the system shall return a user-friendly error. The OTP shall never be exposed in an API response.</td></tr>
+  <tr><td class="req-id">NFR-08</td><td>Scalability</td><td>The system shall support all 36 Indian states and Union Territories. No hard limit on number of forms, responses, or users.</td></tr>
+  <tr><td class="req-id">NFR-09</td><td>Maintainability</td><td>Form field definitions shall be maintained in a single source-of-truth file. Database migrations shall be idempotent.</td></tr>
+</table>
+
+<!-- ═══════════════════════════════ 6. SECURITY ═══════════════════════════════ -->
+
+<h2>6. Security Requirements</h2>
+
+<table>
+  <tr><th style="width:14%;">Req ID</th><th>Requirement</th></tr>
+  <tr><td class="req-id">SEC-01</td><td>Passwords shall be hashed with bcrypt (minimum 10 rounds) before storage. Plain passwords shall never be stored or logged.</td></tr>
+  <tr><td class="req-id">SEC-02</td><td>JWT tokens shall be stored in HttpOnly cookies to prevent JavaScript-based access (XSS protection).</td></tr>
+  <tr><td class="req-id">SEC-03</td><td>All protected API routes shall validate the JWT on every request.</td></tr>
+  <tr><td class="req-id">SEC-04</td><td>Officers shall only access, create, and modify data belonging to their assigned state. State is enforced server-side on every request.</td></tr>
+  <tr><td class="req-id">SEC-05</td><td>Admin-only endpoints (form creation, approval, publishing) shall reject Officer-level tokens with HTTP 403.</td></tr>
+  <tr><td class="req-id">SEC-06</td><td>OTPs shall be hashed with bcrypt (rounds=8) before storage. OTPs expire after 15 minutes. The forgot-password API shall not reveal whether an email is registered.</td></tr>
+  <tr><td class="req-id">SEC-07</td><td>All database queries shall use parameterised statements to prevent SQL injection.</td></tr>
+  <tr><td class="req-id">SEC-08</td><td>File uploads shall be validated by file type and size via server-side middleware.</td></tr>
+</table>
+
+<!-- ═══════════════════════════════ 7. CONSTRAINTS ═══════════════════════════════ -->
+
+<h2>7. Constraints and Assumptions</h2>
+
+<table>
+  <tr><th style="width:14%;">ID</th><th style="width:18%;">Type</th><th>Statement</th></tr>
+  <tr><td class="req-id">CON-01</td><td>Technical</td><td>Requires MySQL 8.0 or above as the database engine.</td></tr>
+  <tr><td class="req-id">CON-02</td><td>Technical</td><td>OTP email delivery depends on Gmail SMTP with a valid App Password and 2FA enabled on the sending account.</td></tr>
+  <tr><td class="req-id">CON-03</td><td>Business</td><td>An officer's state is assigned at registration and cannot be changed via the portal.</td></tr>
+  <tr><td class="req-id">CON-04</td><td>Business</td><td>Published forms cannot be deleted. Admins must finalise form configuration before publishing.</td></tr>
+  <tr><td class="req-id">CON-05</td><td>Technical</td><td>The system is web-only. No native mobile application is provided.</td></tr>
+  <tr><td class="req-id">ASM-01</td><td>Assumption</td><td>Each AG office has at least one registered officer in the system before a form is published to that state.</td></tr>
+  <tr><td class="req-id">ASM-02</td><td>Assumption</td><td>Admins are trusted HQ users. No approval workflow is required for admin-initiated actions.</td></tr>
+  <tr><td class="req-id">ASM-03</td><td>Assumption</td><td>Internet connectivity is available at all AG offices during the survey collection period.</td></tr>
+</table>
+
+<!-- ═══════════════════════════════ 8. GLOSSARY ═══════════════════════════════ -->
+
+<h2>8. Glossary</h2>
+
+<table>
+  <tr><th style="width:18%;">Term</th><th>Definition</th></tr>
+  <tr><td><strong>CGA</strong></td><td>Controller General of Accounts — apex accounting authority of the Government of India under the Ministry of Finance.</td></tr>
+  <tr><td><strong>GA Wing</strong></td><td>Government Accounting Wing under CGA, responsible for overseeing accounting systems across AG offices.</td></tr>
+  <tr><td><strong>AG Office</strong></td><td>Accountant General Office — state-level government accounting authority.</td></tr>
+  <tr><td><strong>GAMIS</strong></td><td>GA Wing Management Information System — this portal.</td></tr>
+  <tr><td><strong>IFMIS</strong></td><td>Integrated Financial Management Information System.</td></tr>
+  <tr><td><strong>e-HRMS</strong></td><td>Electronic Human Resource Management System.</td></tr>
+  <tr><td><strong>WAMIS</strong></td><td>Works Accounting Management Information System.</td></tr>
+  <tr><td><strong>e-Voucher</strong></td><td>Electronic payment voucher system.</td></tr>
+  <tr><td><strong>DA</strong></td><td>Departmental Accounting.</td></tr>
+  <tr><td><strong>MCA</strong></td><td>Monthly Close of Accounts.</td></tr>
+  <tr><td><strong>MKI</strong></td><td>Monthly Key Indicators.</td></tr>
+  <tr><td><strong>OTP</strong></td><td>One-Time Password — 6-digit code sent to registered email for password reset, valid for 15 minutes.</td></tr>
+  <tr><td><strong>Draft</strong></td><td>A partially completed form saved automatically, not yet officially submitted.</td></tr>
+  <tr><td><strong>Approval Status</strong></td><td>Per-record status: Pending (default), Approved, or Rejected — set by admin after reviewing submitted responses.</td></tr>
+  <tr><td><strong>Custom Section</strong></td><td>A survey section created by admin via the wizard, outside the standard IFMIS / e-HRMS / WAMIS / e-Voucher annexures.</td></tr>
+  <tr><td><strong>Form ID</strong></td><td>System-generated unique identifier for each form, e.g. <em>GAW-NEW-1782119772749</em>.</td></tr>
+  <tr><td><strong>JWT</strong></td><td>JSON Web Token — used for stateless authentication, stored in an HttpOnly browser cookie.</td></tr>
+</table>
+
+<br>
+<hr style="border:1pt solid #ccc; margin-top:24pt;">
+<p style="font-size:9pt; color:#888; text-align:center;">
+  GAMIS &nbsp;·&nbsp; User Requirement Specification v1.0 &nbsp;·&nbsp; June 2026 &nbsp;·&nbsp;
+  Office of the Controller General of Accounts, Ministry of Finance &nbsp;·&nbsp; INTERNAL DOCUMENT
+</p>
+
+</body>
+</html>

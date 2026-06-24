@@ -180,8 +180,48 @@ export default function Editor({ form, onUpdate, onSaveDraft, onSendReview, onPu
             <input value={form.name} disabled={isLocked} onChange={e => onUpdate(form.id, { name: e.target.value })} className={`box-border w-full rounded-lg border-[1.5px] border-ga-line px-[13px] py-[9px] text-[13px] text-ga-ink ${isLocked ? "bg-ga-surface" : "bg-white"}`} />
           </div>
           <div>
-            <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">Survey Year</div>
-            <input value={form.surveyYear} disabled={isLocked} onChange={e => onUpdate(form.id, { surveyYear: e.target.value })} className={`box-border w-full rounded-lg border-[1.5px] border-ga-line px-[13px] py-[9px] text-[13px] text-ga-ink ${isLocked ? "bg-ga-surface" : "bg-white"}`} />
+            <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">Survey Year *</div>
+            <input
+              value={form.surveyYear}
+              disabled={isLocked}
+              placeholder="eg. 2025-26"
+              maxLength={7}
+              onKeyDown={e => {
+                const nav = ["Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Tab","Home","End"];
+                if (nav.includes(e.key)) return;
+                if (e.key === "Backspace") {
+                  // When cursor is at "YYYY-" backspace must also remove the last digit
+                  // otherwise onChange would re-insert the hyphen immediately
+                  if (/^\d{4}-$/.test(form.surveyYear || "")) {
+                    e.preventDefault();
+                    onUpdate(form.id, { surveyYear: (form.surveyYear || "").slice(0, 3) });
+                  }
+                  return;
+                }
+                if (/^\d$/.test(e.key)) return;
+                e.preventDefault();
+              }}
+              onChange={e => {
+                const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
+                // Insert hyphen automatically after the 4th digit
+                const formatted = digits.length >= 4 ? digits.slice(0, 4) + "-" + digits.slice(4) : digits;
+                onUpdate(form.id, { surveyYear: formatted });
+              }}
+              className={`box-border w-full rounded-lg border-[1.5px] px-[13px] py-[9px] text-[13px] text-ga-ink ${
+                isLocked
+                  ? "border-ga-line bg-ga-surface"
+                  : !form.surveyYear?.trim() || !/^\d{4}-\d{2}$/.test(form.surveyYear.trim())
+                    ? "border-ga-error bg-white"
+                    : "border-ga-line bg-white"
+              }`}
+            />
+            {!isLocked && (
+              !form.surveyYear?.trim()
+                ? <div className="mt-1 text-[11px] text-ga-error">⚠ Survey year is required.</div>
+                : !/^\d{4}-\d{2}$/.test(form.surveyYear.trim())
+                  ? <div className="mt-1 text-[11px] text-ga-error">⚠ Format must be YYYY-YY (eg. 2025-26).</div>
+                  : null
+            )}
           </div>
           <div className="col-span-2">
             <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ga-muted">Description / Instructions</div>
